@@ -1,0 +1,6 @@
+[
+    {
+        "command": "diff_view",
+        "keys": ["alt+shift+d"]
+    }
+]
