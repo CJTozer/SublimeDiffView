@@ -2,5 +2,9 @@
     {
         "command": "diff_view",
         "keys": ["alt+shift+d"]
+    },
+    {
+        "command": "diff_files_list",
+        "keys": ["alt+d"]
     }
 ]
