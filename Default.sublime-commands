@@ -1,6 +1,6 @@
 [
     {
-        "caption": "Diff View: TEST",
+        "caption": "Diff View: Custom Diff Command",
         "command": "diff_view"
     }
 ]
