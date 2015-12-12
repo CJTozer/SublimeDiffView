@@ -4,7 +4,7 @@
         "keys": ["alt+shift+d"]
     },
     {
-        "command": "diff_files_list",
+        "command": "diff_hunks_list",
         "keys": ["alt+d"]
     }
 ]

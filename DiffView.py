@@ -55,6 +55,7 @@ class DiffView(sublime_plugin.WindowCommand):
         self.window.open_file(hunk.filespec(), sublime.ENCODED_POSITION)
 
     def preview_hunk(self, index):
+        self.window.active_view().erase_regions(REGION_KEY)
         hunk = self.parser.changed_hunks[index]
         already_exists = self.window.find_open_file(hunk.file_diff.filename)
         self.preview = self.window.open_file(hunk.filespec(), sublime.TRANSIENT | sublime.ENCODED_POSITION)
@@ -89,7 +90,7 @@ class DiffParser(object):
         return files
 
 class FileDiff(object):
-    HUNK_MATCH = re.compile('\r?\n@@ \-(\d+),(\d+) \+(\d+),(\d+) @@')
+    HUNK_MATCH = re.compile('\r?\n@@ \-(\d+),?(\d*) \+(\d+),?(\d*) @@')
 
     def __init__(self, filename, abs_filename, diff_args):
         self.filename = filename
@@ -106,25 +107,19 @@ class FileDiff(object):
 
     def parse_diff(self):
         if not self.diff_text:
-            self.diff_text = git_command(['diff', self.diff_args, '--minimal', '-U0', '--', self.filename])
+            self.diff_text = git_command(['diff', self.diff_args, '-U0', '--', self.filename])
             hunks = self.HUNK_MATCH.split(self.diff_text)
+
             # First item is the header - drop it
             hunks.pop(0)
-            print(hunks)
-            while len(hunks) >= 5:
-                # Don't force all parsing up-front
-                self.hunks.append(HunkDiff(self,
-                                           old_line_num=hunks[0],
-                                           old_hunk_len=hunks[1],
-                                           new_line_num=hunks[2],
-                                           new_hunk_len=hunks[3],
-                                           hunk_diff_text=hunks[4]))
-                hunks = hunks[5:]
+            match_len = 5
+            while len(hunks) >= match_len:
+                self.hunks.append(HunkDiff(self, hunks[:match_len]))
+                hunks = hunks[match_len:]
 
     def add_regions(self, view):
-        regions = [sublime.Region(
-            view.text_point(h.new_line_num, 0),
-            view.text_point(h.new_line_num + h.new_hunk_len + 1, -1)) for h in self.hunks]
+        # TODO: Don't currently know how to show DELETE hunks sensibly
+        regions = [h.get_region(view) for h in self.hunks if h.type != "DEL"]
         view.add_regions(REGION_KEY, regions, "cjttest")
 
 class HunkDiff(object):
@@ -132,37 +127,44 @@ class HunkDiff(object):
     ADD_LINE_MATCH = re.compile('^\+(.*)')
     DEL_LINE_MATCH = re.compile('^\-(.*)')
 
-    def __init__(self,
-                 file_diff,
-                 old_line_num,
-                 old_hunk_len,
-                 new_line_num,
-                 new_hunk_len,
-                 hunk_diff_text):
+    def __init__(self, file_diff, match):
         self.file_diff = file_diff
-        self.old_line_num = int(old_line_num)
-        self.old_hunk_len = int(old_hunk_len)
-        self.new_line_num = int(new_line_num)
-        self.new_hunk_len = int(new_hunk_len)
-        self.hunk_diff_text = hunk_diff_text
-        self.description = "{}:{}".format(file_diff.filename, self.new_line_num)
-        print("Created new hunk.")
-        print("    Old line start: {}".format(self.old_line_num))
-        print("    New line start: {}".format(self.new_line_num))
-        print("    Diff:\n{}----".format(self.hunk_diff_text))
+        self.old_line_start = int(match[0])
+        self.old_hunk_len = 1
+        if len(match[1]) > 0:
+            self.old_hunk_len = int(match[1])
+        self.new_line_start = int(match[2])
+        self.new_hunk_len = 1
+        if len(match[3]) > 0:
+            self.new_hunk_len = int(match[3])
+        self.hunk_diff_text = match[4]
+        self.description = "{}:{}".format(file_diff.filename, self.new_line_start)
+
+        if self.old_hunk_len == 0:
+            self.type = "ADD"
+        elif self.new_hunk_len == 0:
+            self.type = "DEL"
+        else:
+            self.type = "MOD"
 
     def parse_diff(self):
         # Need to track line number (and character position) as we run through the regions.
         # Multiline adds and deletes are spread over multiple regions.
-        old_line_num = self.old_line_num
-        new_line_num = self.new_line_num
+        old_line_num = self.old_line_start
+        new_line_num = self.new_line_start
         for region in self.LINE_DELIM_MATCH.split(self.hunk_diff_text):
             print("$$$$" + region + "&&&&")
             add_match = self.ADD_LINE_MATCH.match(region)
             del_match = self.DEL_LINE_MATCH.match(region)
 
     def filespec(self):
-        return "{}:{}".format(self.file_diff.abs_filename, self.new_line_num)
+        return "{}:{}".format(self.file_diff.abs_filename, self.new_line_start)
+
+    def get_region(self, view):
+        # TODO - differentiate between ADD (old_hunk_len == 0), DEL (new_hunk_len == 0) and MOD (both > 0)
+        return sublime.Region(
+            view.text_point(self.new_line_start - 1, 0),
+            view.text_point(self.new_line_start + self.new_hunk_len -1, 0))
 
 def git_command(args):
     p = subprocess.Popen(['git'] + args,
