@@ -7,6 +7,8 @@ import tempfile
 import time
 import threading
 
+REGION_KEY = 'cjttest'
+
 class DiffView(sublime_plugin.WindowCommand):
     diff_base = ''
 
@@ -42,6 +44,7 @@ class DiffView(sublime_plugin.WindowCommand):
 
     def show_hunk_diff(self, index):
         print("show_hunk_diff: {}".format(index))
+        self.window.active_view().erase_regions(REGION_KEY)
         if index == -1:
             if self.preview:
                 self.preview.close()
@@ -57,7 +60,7 @@ class DiffView(sublime_plugin.WindowCommand):
         self.preview = self.window.open_file(hunk.filespec(), sublime.TRANSIENT | sublime.ENCODED_POSITION)
         if already_exists:
             self.preview = None
-
+        hunk.file_diff.add_regions(self.window.active_view())
 
 class DiffHunksList(sublime_plugin.WindowCommand):
     def run(self):
@@ -86,7 +89,7 @@ class DiffParser(object):
         return files
 
 class FileDiff(object):
-    HUNK_MATCH = re.compile('\r?\n@@ \-(\d+),\d+ \+(\d+),\d+ @@')
+    HUNK_MATCH = re.compile('\r?\n@@ \-(\d+),(\d+) \+(\d+),(\d+) @@')
 
     def __init__(self, filename, abs_filename, diff_args):
         self.filename = filename
@@ -103,28 +106,44 @@ class FileDiff(object):
 
     def parse_diff(self):
         if not self.diff_text:
-            self.diff_text = git_command(['diff', self.diff_args, '--minimal', '-U0', '--word-diff=porcelain', '--', self.filename])
+            self.diff_text = git_command(['diff', self.diff_args, '--minimal', '-U0', '--', self.filename])
             hunks = self.HUNK_MATCH.split(self.diff_text)
             # First item is the header - drop it
             hunks.pop(0)
             print(hunks)
-            while len(hunks) >= 3:
+            while len(hunks) >= 5:
                 # Don't force all parsing up-front
                 self.hunks.append(HunkDiff(self,
                                            old_line_num=hunks[0],
-                                           new_line_num=hunks[1],
-                                           hunk_diff_text=hunks[2]))
-                hunks = hunks[3:]
+                                           old_hunk_len=hunks[1],
+                                           new_line_num=hunks[2],
+                                           new_hunk_len=hunks[3],
+                                           hunk_diff_text=hunks[4]))
+                hunks = hunks[5:]
+
+    def add_regions(self, view):
+        regions = [sublime.Region(
+            view.text_point(h.new_line_num, 0),
+            view.text_point(h.new_line_num + h.new_hunk_len + 1, -1)) for h in self.hunks]
+        view.add_regions(REGION_KEY, regions, "cjttest")
 
 class HunkDiff(object):
     LINE_DELIM_MATCH = re.compile('\r?\n~\r?\n')
     ADD_LINE_MATCH = re.compile('^\+(.*)')
     DEL_LINE_MATCH = re.compile('^\-(.*)')
 
-    def __init__(self, file_diff, old_line_num, new_line_num, hunk_diff_text):
+    def __init__(self,
+                 file_diff,
+                 old_line_num,
+                 old_hunk_len,
+                 new_line_num,
+                 new_hunk_len,
+                 hunk_diff_text):
         self.file_diff = file_diff
         self.old_line_num = int(old_line_num)
+        self.old_hunk_len = int(old_hunk_len)
         self.new_line_num = int(new_line_num)
+        self.new_hunk_len = int(new_hunk_len)
         self.hunk_diff_text = hunk_diff_text
         self.description = "{}:{}".format(file_diff.filename, self.new_line_num)
         print("Created new hunk.")
