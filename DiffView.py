@@ -7,7 +7,9 @@ import tempfile
 import time
 import threading
 
-REGION_KEY = 'cjttest'
+ADD_REGION_KEY = 'diffview-highlight-addition'
+MOD_REGION_KEY = 'diffview-highlight-modification'
+DEL_REGION_KEY = 'diffview-highlight-deletion'
 
 class DiffView(sublime_plugin.WindowCommand):
     diff_base = ''
@@ -43,8 +45,10 @@ class DiffView(sublime_plugin.WindowCommand):
             self.preview_hunk)
 
     def show_hunk_diff(self, index):
-        print("show_hunk_diff: {}".format(index))
-        self.window.active_view().erase_regions(REGION_KEY)
+        self.window.active_view().erase_regions(ADD_REGION_KEY)
+        self.window.active_view().erase_regions(MOD_REGION_KEY)
+        self.window.active_view().erase_regions(DEL_REGION_KEY)
+
         if index == -1:
             if self.preview:
                 self.preview.close()
@@ -55,7 +59,10 @@ class DiffView(sublime_plugin.WindowCommand):
         self.window.open_file(hunk.filespec(), sublime.ENCODED_POSITION)
 
     def preview_hunk(self, index):
-        self.window.active_view().erase_regions(REGION_KEY)
+        self.window.active_view().erase_regions(ADD_REGION_KEY)
+        self.window.active_view().erase_regions(MOD_REGION_KEY)
+        self.window.active_view().erase_regions(DEL_REGION_KEY)
+
         hunk = self.parser.changed_hunks[index]
         already_exists = self.window.find_open_file(hunk.file_diff.filename)
         self.preview = self.window.open_file(hunk.filespec(), sublime.TRANSIENT | sublime.ENCODED_POSITION)
@@ -118,17 +125,37 @@ class FileDiff(object):
                 hunks = hunks[match_len:]
 
     def add_regions(self, view):
-        # TODO: Don't currently know how to show DELETE hunks sensibly
-        regions = [h.get_region(view) for h in self.hunks if h.type != "DEL"]
-        view.add_regions(REGION_KEY, regions, "comment")
+        view.add_regions(
+            ADD_REGION_KEY,
+            [h.get_region(view) for h in self.hunks if h.hunk_type == "ADD"],
+            "string",
+            flags=sublime.DRAW_EMPTY | sublime.HIDE_ON_MINIMAP | sublime.DRAW_EMPTY_AS_OVERWRITE | sublime.DRAW_NO_FILL)
+        view.add_regions(
+            MOD_REGION_KEY,
+            [h.get_region(view) for h in self.hunks if h.hunk_type == "MOD"],
+            "comment",
+            flags=sublime.DRAW_EMPTY | sublime.HIDE_ON_MINIMAP | sublime.DRAW_EMPTY_AS_OVERWRITE | sublime.DRAW_NO_FILL)
+        view.add_regions(
+            DEL_REGION_KEY,
+            [h.get_region(view) for h in self.hunks if h.hunk_type == "DEL"],
+            "invalid",
+            flags=sublime.DRAW_EMPTY | sublime.HIDE_ON_MINIMAP | sublime.DRAW_EMPTY_AS_OVERWRITE | sublime.DRAW_NO_FILL)
 
 class HunkDiff(object):
+    NEWLINE_MATCH = re.compile('\r?\n')
     LINE_DELIM_MATCH = re.compile('\r?\n~\r?\n')
     ADD_LINE_MATCH = re.compile('^\+(.*)')
     DEL_LINE_MATCH = re.compile('^\-(.*)')
 
     def __init__(self, file_diff, match):
         self.file_diff = file_diff
+
+        # Maches' meanings are:
+        # - 0: start line in old file
+        # - 1: num lines removed from old file (0 for ADD, missing if it's a one-line change)
+        # - 2: start line in new file
+        # - 3: num lines added to new file (0 for DEL, missing if it's a one-line change)
+        # - 4: the remainder of the hunk, after the header
         self.old_line_start = int(match[0])
         self.old_hunk_len = 1
         if len(match[1]) > 0:
@@ -137,15 +164,19 @@ class HunkDiff(object):
         self.new_hunk_len = 1
         if len(match[3]) > 0:
             self.new_hunk_len = int(match[3])
-        self.hunk_diff_text = match[4]
-        self.description = "{}:{}".format(file_diff.filename, self.new_line_start)
+        self.hunk_diff_lines = self.NEWLINE_MATCH.split(match[4])
 
         if self.old_hunk_len == 0:
-            self.type = "ADD"
+            self.hunk_type = "ADD"
         elif self.new_hunk_len == 0:
-            self.type = "DEL"
+            self.hunk_type = "DEL"
         else:
-            self.type = "MOD"
+            self.hunk_type = "MOD"
+
+        self.description = [
+            "{}:{}".format(file_diff.filename, self.new_line_start),
+            self.hunk_diff_lines[0],
+            self.hunk_type]
 
     def parse_diff(self):
         # Need to track line number (and character position) as we run through the regions.
@@ -161,7 +192,6 @@ class HunkDiff(object):
         return "{}:{}".format(self.file_diff.abs_filename, self.new_line_start)
 
     def get_region(self, view):
-        # TODO - differentiate between ADD (old_hunk_len == 0), DEL (new_hunk_len == 0) and MOD (both > 0)
         return sublime.Region(
             view.text_point(self.new_line_start - 1, 0),
             view.text_point(self.new_line_start + self.new_hunk_len - 1, 0))
