@@ -1,6 +1,10 @@
 [
     {
-        "caption": "Diff View: Custom Diff Command",
+        "caption": "Diff View: Compare working copy with...",
         "command": "diff_view"
+    },
+    {
+        "caption": "Diff View: List changes from last diff",
+        "command": "diff_hunks_list"
     }
 ]
