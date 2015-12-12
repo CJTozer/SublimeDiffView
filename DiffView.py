@@ -40,7 +40,7 @@ class DiffView(sublime_plugin.WindowCommand):
         self.window.show_quick_panel(
             [h.description for h in self.parser.changed_hunks],
             self.show_hunk_diff,
-            0,
+            sublime.MONOSPACE_FONT,
             self.last_hunk_index,
             self.preview_hunk)
 
@@ -114,7 +114,7 @@ class FileDiff(object):
 
     def parse_diff(self):
         if not self.diff_text:
-            self.diff_text = git_command(['diff', self.diff_args, '-U0', '--', self.filename])
+            self.diff_text = git_command(['diff', self.diff_args, '-U0', '--minimal', '--word-diff=porcelain', '--', self.filename])
             hunks = self.HUNK_MATCH.split(self.diff_text)
 
             # First item is the header - drop it
@@ -128,13 +128,13 @@ class FileDiff(object):
         view.add_regions(
             ADD_REGION_KEY,
             [h.get_region(view) for h in self.hunks if h.hunk_type == "ADD"],
-            "string",
-            flags=sublime.DRAW_EMPTY | sublime.HIDE_ON_MINIMAP | sublime.DRAW_EMPTY_AS_OVERWRITE | sublime.DRAW_NO_FILL)
+            "support.class",
+            flags=sublime.HIDE_ON_MINIMAP | sublime.DRAW_NO_FILL)
         view.add_regions(
             MOD_REGION_KEY,
             [h.get_region(view) for h in self.hunks if h.hunk_type == "MOD"],
-            "comment",
-            flags=sublime.DRAW_EMPTY | sublime.HIDE_ON_MINIMAP | sublime.DRAW_EMPTY_AS_OVERWRITE | sublime.DRAW_NO_FILL)
+            "string",
+            flags=sublime.HIDE_ON_MINIMAP | sublime.DRAW_NO_FILL)
         view.add_regions(
             DEL_REGION_KEY,
             [h.get_region(view) for h in self.hunks if h.hunk_type == "DEL"],
@@ -176,9 +176,12 @@ class HunkDiff(object):
         self.description = [
             "{}:{}".format(file_diff.filename, self.new_line_start),
             self.hunk_diff_lines[0],
-            self.hunk_type]
+            "{} | {}{}".format(self.old_hunk_len + self.new_hunk_len,
+                               "+" * self.new_hunk_len,
+                               "-" * self.old_hunk_len)]
 
     def parse_diff(self):
+        # TODO - more detailed diffs (better than just line-by-line)
         # Need to track line number (and character position) as we run through the regions.
         # Multiline adds and deletes are spread over multiple regions.
         old_line_num = self.old_line_start
