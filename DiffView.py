@@ -4,26 +4,33 @@ import subprocess
 import re
 import os
 import tempfile
+import time
+import threading
 
-class DiffView(sublime_plugin.WindowCommand):
+class DiffView(sublime_plugin.ApplicationCommand):
     diff_base = ''
 
     def run(self):
-        # Use this as show_quick_panel doesn't allow arbitrary data
-        self.window.show_input_panel("Diff against? [HEAD]", self.diff_base, self.do_diff, None, None)
-        self.window.last_diff = self
+        self.git_base = git_command(['rev-parse', '--show-toplevel']).rstrip()
+        sublime.active_window().last_diff = self
         self.last_file_index = 0
         self.preview = None
 
         # Create a temporary directory for (read-only) old versions of changed files
         self.temp_dir = tempfile.mkdtemp()
 
+        # Use show_input_panel as show_quick_panel doesn't allow arbitrary data
+        sublime.active_window().show_input_panel("Diff against? [HEAD]", self.diff_base, self.do_diff, None, None)
+
     def do_diff(self, diff_base):
         if diff_base == '':
             diff_base = 'HEAD'
         self.diff_base = diff_base
-        print("Diff args: %s" % self.diff_base)
 
+        # Record the original layout
+        self.orig_layout = sublime.active_window().get_layout()
+
+        # Create the diff parser
         self.parser = DiffParser(self.diff_base)
 
         # Create the old files in the temporary directory
@@ -34,7 +41,6 @@ class DiffView(sublime_plugin.WindowCommand):
 
     def create_old_files(self):
         for changed_file in self.parser.changed_files:
-            print("File {} has changed".format(changed_file.filename))
             target_dir = os.path.join(self.temp_dir, os.path.dirname(changed_file.filename))
             changed_file.old_file = os.path.join(self.temp_dir, changed_file.filename)
             if not os.path.exists(target_dir):
@@ -45,7 +51,8 @@ class DiffView(sublime_plugin.WindowCommand):
                 f.write(old_file_content.replace('\r\n', '\n'))
 
     def list_changed_files(self):
-        self.window.show_quick_panel(
+        print(self.parser.changed_files)
+        sublime.active_window().show_quick_panel(
             [f.filename for f in self.parser.changed_files],
             self.show_file_diff,
             0,
@@ -53,28 +60,45 @@ class DiffView(sublime_plugin.WindowCommand):
             self.preview_diff)
 
     def show_file_diff(self, index):
-        if self.preview:
-            self.preview.close()
-            self.preview = None
+        print("show_file_diff: {}".format(index))
         if index == -1:
+            # Reset the layout
+            self.preview_old_file.close()
+            sublime.active_window().set_layout(self.orig_layout)
             return
 
         self.last_file_index = index
         changed_file = self.parser.changed_files[index]
-        self.window.open_file(changed_file.old_file)
+        sublime.active_window().open_file(changed_file.old_file)
         # sublime.ENCODED_POSITION flag will look for "file:line:col", which will be useful later.
 
+
     def preview_diff(self, index):
-        if self.preview:
-            self.preview.close()
         changed_file = self.parser.changed_files[index]
-        self.preview = self.window.open_file(changed_file.old_file, sublime.TRANSIENT)
+
+        sublime.active_window().set_layout( { "cols": [0.0, 0.5, 1.0], "rows": [0.0, 1.0], "cells": [[0, 0, 1, 1], [1, 0, 2, 1]] } )
+        #new_file_abs = os.path.join(self.git_base, changed_file.filename)
+        #self.preview_new_file = sublime.active_window().open_file(new_file_abs, sublime.TRANSIENT)
+        self.preview_old_file = sublime.active_window().open_file(changed_file.old_file)#, sublime.TRANSIENT)
+
+        # Wait for the view to load
+        def move_old_view():
+            print("Starting THREAD")
+            while self.preview_old_file.is_loading():
+                time.sleep(0.1)
+            print("Moving view")
+            print(sublime.active_window().active_group())
+            #sublime.active_window().set_view_index(self.preview_old_file, 1, 0)
+
+        threading.Thread(target=move_old_view).start()
+
+        #sublime.active_window().set_view_index(self.preview_new_file, 1, 0)
         # sublime.ENCODED_POSITION flag will look for "file:line:col", which will be useful later.
 
 class DiffFilesList(sublime_plugin.WindowCommand):
     def run(self):
-        if hasattr(self.window, 'last_diff'):
-            self.window.last_diff.list_changed_files()
+        if hasattr(sublime.active_window(), 'last_diff'):
+            sublime.active_window().last_diff.list_changed_files()
 
 class DiffParser(object):
     STAT_CHANGED_FILE = re.compile('\s*([\w\.\-\/]+)\s*\|')
@@ -140,7 +164,6 @@ class HunkDiff(object):
             del_match = self.DEL_LINE_MATCH.match(region)
 
 def git_command(args):
-    print(args)
     p = subprocess.Popen(['git'] + args,
                          stdout=subprocess.PIPE,
                          shell=True)
