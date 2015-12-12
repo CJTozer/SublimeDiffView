@@ -120,7 +120,7 @@ class FileDiff(object):
     def add_regions(self, view):
         # TODO: Don't currently know how to show DELETE hunks sensibly
         regions = [h.get_region(view) for h in self.hunks if h.type != "DEL"]
-        view.add_regions(REGION_KEY, regions, "cjttest")
+        view.add_regions(REGION_KEY, regions, "comment")
 
 class HunkDiff(object):
     LINE_DELIM_MATCH = re.compile('\r?\n~\r?\n')
@@ -164,7 +164,7 @@ class HunkDiff(object):
         # TODO - differentiate between ADD (old_hunk_len == 0), DEL (new_hunk_len == 0) and MOD (both > 0)
         return sublime.Region(
             view.text_point(self.new_line_start - 1, 0),
-            view.text_point(self.new_line_start + self.new_hunk_len -1, 0))
+            view.text_point(self.new_line_start + self.new_hunk_len - 1, 0))
 
 def git_command(args):
     p = subprocess.Popen(['git'] + args,
