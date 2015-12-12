@@ -6,13 +6,14 @@ import os
 import tempfile
 
 class DiffView(sublime_plugin.WindowCommand):
-    last_diff = ''
+    diff_base = ''
 
     def run(self):
         # Use this as show_quick_panel doesn't allow arbitrary data
-        self.window.show_input_panel("Diff against? [HEAD]", self.last_diff, self.do_diff, None, None)
+        self.window.show_input_panel("Diff against? [HEAD]", self.diff_base, self.do_diff, None, None)
         self.window.last_diff = self
         self.last_file_index = 0
+        self.preview = None
 
         # Create a temporary directory for (read-only) old versions of changed files
         self.temp_dir = tempfile.mkdtemp()
@@ -20,7 +21,6 @@ class DiffView(sublime_plugin.WindowCommand):
     def do_diff(self, diff_base):
         if diff_base == '':
             diff_base = 'HEAD'
-        self.last_diff = diff_base
         self.diff_base = diff_base
         print("Diff args: %s" % self.diff_base)
 
@@ -36,11 +36,10 @@ class DiffView(sublime_plugin.WindowCommand):
         for changed_file in self.parser.changed_files:
             print("File {} has changed".format(changed_file.filename))
             target_dir = os.path.join(self.temp_dir, os.path.dirname(changed_file.filename))
-            target_file = os.path.join(self.temp_dir, changed_file.filename)
-            print(target_file)
+            changed_file.old_file = os.path.join(self.temp_dir, changed_file.filename)
             if not os.path.exists(target_dir):
                 os.makedirs(os.path.join(self.temp_dir, os.path.dirname(changed_file.filename)))
-            with open(target_file, 'w') as f:
+            with open(changed_file.old_file, 'w') as f:
                 git_args = ['show', '{}:{}'.format(self.diff_base, changed_file.filename)]
                 old_file_content = git_command(git_args)
                 f.write(old_file_content.replace('\r\n', '\n'))
@@ -54,11 +53,23 @@ class DiffView(sublime_plugin.WindowCommand):
             self.preview_diff)
 
     def show_file_diff(self, index):
+        if self.preview:
+            self.preview.close()
+            self.preview = None
+        if index == -1:
+            return
+
         self.last_file_index = index
-        print("show_file_diff: {}".format(self.parser.changed_files[index]))
+        changed_file = self.parser.changed_files[index]
+        self.window.open_file(changed_file.old_file)
+        # sublime.ENCODED_POSITION flag will look for "file:line:col", which will be useful later.
 
     def preview_diff(self, index):
-        print("preview_diff: {}".format(index))
+        if self.preview:
+            self.preview.close()
+        changed_file = self.parser.changed_files[index]
+        self.preview = self.window.open_file(changed_file.old_file, sublime.TRANSIENT)
+        # sublime.ENCODED_POSITION flag will look for "file:line:col", which will be useful later.
 
 class DiffFilesList(sublime_plugin.WindowCommand):
     def run(self):
@@ -85,6 +96,7 @@ class FileDiff(object):
 
     def __init__(self, filename, diff_args):
         self.filename = filename
+        self.old_file = 'UNDEFINED'
         self.diff_args = diff_args
         self.diff_text = ''
         self.hunks = []
