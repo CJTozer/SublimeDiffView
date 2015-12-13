@@ -168,17 +168,14 @@ class FileDiff(object):
         filename: The filename as given by Git - i.e. relative to the Git base
             directory.
         abs_filename: The absolute filename for this file.
-        diff_args: The arguments to be used for the Git diff.
-        git_base: The base Git directory.
+        diff_text: The text of the Git diff.
     """
 
-    def __init__(self, filename, abs_filename, diff_args, git_base):
+    def __init__(self, filename, abs_filename, diff_text):
         self.filename = filename
         self.abs_filename = abs_filename
-        self.git_base = git_base
         self.old_file = 'UNDEFINED'
-        self.diff_args = diff_args
-        self.diff_text = ''
+        self.diff_text = diff_text
         self.hunks = []
 
     def get_hunks(self):
@@ -192,29 +189,17 @@ class FileDiff(object):
         return self.hunks
 
     def parse_diff(self):
-        """If not already done, run the Git diff command, and parse the diff
-        for this file into hunks.
+        """Run the Git diff command, and parse the diff for this file into
+        hunks.
         """
-        if not self.diff_text:
-            # TODO - move the Git command out of the FileDiff and into the
-            # DiffParser
-            self.diff_text = git_command(
-                ['diff',
-                 self.diff_args,
-                 '-U0',
-                 '--minimal',
-                 '--word-diff=porcelain',
-                 '--',
-                 self.filename],
-                 self.git_base)
-            hunks = self.HUNK_MATCH.split(self.diff_text)
+        hunks = self.HUNK_MATCH.split(self.diff_text)
 
-            # First item is the header - drop it
-            hunks.pop(0)
-            match_len = 5
-            while len(hunks) >= match_len:
-                self.hunks.append(HunkDiff(self, hunks[:match_len]))
-                hunks = hunks[match_len:]
+        # First item is the header - drop it
+        hunks.pop(0)
+        match_len = 5
+        while len(hunks) >= match_len:
+            self.hunks.append(HunkDiff(self, hunks[:match_len]))
+            hunks = hunks[match_len:]
 
     def add_regions(self, view):
         """Add all highlighted regions to the view for this file."""
@@ -378,7 +363,13 @@ class HunkDiff(object):
                     # Filter out the ADD sections
                     del_chunks.append(
                         [l for l in this_chunk if not l.startswith('+')])
-                this_chunk = []
+
+                if this_chunk_add or this_chunk_del:
+                    # Blank lines need carrying over as they'll be used as a
+                    # prefix for the next lines
+                    this_chunk = []
+                this_chunk_add = False
+                this_chunk_del = False
             else:
                 this_chunk.append(line)
                 this_chunk_add = this_chunk_add or line.startswith('+')
