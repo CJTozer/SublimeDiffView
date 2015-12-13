@@ -46,7 +46,8 @@ class DiffView(sublime_plugin.WindowCommand):
         self.orig_viewport = self.orig_view.viewport_position()
 
         # Create the diff parser
-        self.parser = DiffParser(self.diff_args)
+        cwd = os.path.dirname(self.window.active_view().file_name())
+        self.parser = DiffParser(self.diff_args, cwd)
 
         # Show the list of changed hunks
         self.list_changed_hunks()
@@ -83,7 +84,9 @@ class DiffView(sublime_plugin.WindowCommand):
             self.window.focus_view(self.orig_view)
             self.orig_view.sel().clear()
             self.orig_view.sel().add(self.orig_pos)
-            self.orig_view.set_viewport_position(self.orig_viewport, animate=False)
+            self.orig_view.set_viewport_position(
+                self.orig_viewport,
+                animate=False)
             return
 
         self.last_hunk_index = hunk_index
@@ -97,6 +100,8 @@ class DiffView(sublime_plugin.WindowCommand):
             hunk_index: the selected index in the changed hunks list.
         """
         hunk = self.parser.changed_hunks[hunk_index]
+        # TODO - don't think this works when the "already existing" file isn't
+        # the active view (it gets closed anyway)...
         already_exists = self.window.find_open_file(hunk.file_diff.filename)
         self.preview = self.window.open_file(
             hunk.filespec(),
@@ -123,10 +128,13 @@ class DiffParser(object):
 
     Args:
         diff_args: The arguments to be used for the Git diff.
+        cwd: The working directory.
     """
 
-    def __init__(self, diff_args):
-        self.git_base = git_command(['rev-parse', '--show-toplevel']).rstrip()
+    def __init__(self, diff_args, cwd):
+        self.cwd = cwd
+        self.git_base = git_command(
+            ['rev-parse', '--show-toplevel'], self.cwd).rstrip()
         self.diff_args = diff_args
         self.changed_files = self._get_changed_files()
         self.changed_hunks = []
@@ -135,14 +143,19 @@ class DiffParser(object):
 
     def _get_changed_files(self):
         files = []
-        diff_stat = git_command(['diff', '--stat', self.diff_args])
+        diff_stat = git_command(
+            ['diff', '--stat', self.diff_args], self.git_base)
         for line in diff_stat.split('\n'):
             match = self.STAT_CHANGED_FILE.match(line)
             if match:
                 filename = match.group(1)
                 abs_filename = os.path.join(self.git_base, filename)
                 files.append(
-                    FileDiff(match.group(1), abs_filename, self.diff_args))
+                    FileDiff(
+                        match.group(1),
+                        abs_filename,
+                        self.diff_args,
+                        self.git_base))
         return files
 
 
@@ -156,11 +169,13 @@ class FileDiff(object):
             directory.
         abs_filename: The absolute filename for this file.
         diff_args: The arguments to be used for the Git diff.
+        git_base: The base Git directory.
     """
 
-    def __init__(self, filename, abs_filename, diff_args):
+    def __init__(self, filename, abs_filename, diff_args, git_base):
         self.filename = filename
         self.abs_filename = abs_filename
+        self.git_base = git_base
         self.old_file = 'UNDEFINED'
         self.diff_args = diff_args
         self.diff_text = ''
@@ -181,6 +196,8 @@ class FileDiff(object):
         for this file into hunks.
         """
         if not self.diff_text:
+            # TODO - move the Git command out of the FileDiff and into the
+            # DiffParser
             self.diff_text = git_command(
                 ['diff',
                  self.diff_args,
@@ -188,7 +205,8 @@ class FileDiff(object):
                  '--minimal',
                  '--word-diff=porcelain',
                  '--',
-                 self.filename])
+                 self.filename],
+                 self.git_base)
             hunks = self.HUNK_MATCH.split(self.diff_text)
 
             # First item is the header - drop it
@@ -211,7 +229,9 @@ class FileDiff(object):
             [r for h in self.hunks for r in h.get_regions(view)
                 if h.hunk_type == "MOD"],
             "string",
-            flags=sublime.HIDE_ON_MINIMAP | sublime.DRAW_NO_FILL)
+            flags=sublime.DRAW_EMPTY |
+            sublime.HIDE_ON_MINIMAP |
+            sublime.DRAW_NO_FILL)
         view.add_regions(
             DEL_REGION_KEY,
             [r for h in self.hunks for r in h.get_regions(view)
@@ -256,7 +276,8 @@ class HunkDiff(object):
         self.new_hunk_len = 1
         if len(match[3]) > 0:
             self.new_hunk_len = int(match[3])
-        self.hunk_diff_lines = self.NEWLINE_MATCH.split(match[4])
+        self.context = self.NEWLINE_MATCH.split(match[4])[0]
+        self.hunk_diff_lines = self.NEWLINE_MATCH.split(match[4])[1:]
 
         if self.old_hunk_len == 0:
             self.hunk_type = "ADD"
@@ -268,7 +289,7 @@ class HunkDiff(object):
         # Create the description that will appear in the quick_panel.
         self.description = [
             "{} : {}".format(file_diff.filename, self.new_line_start),
-            self.hunk_diff_lines[0],
+            self.context,
             "{} | {}{}".format(self.old_hunk_len + self.new_hunk_len,
                                "+" * self.new_hunk_len,
                                "-" * self.old_hunk_len)]
@@ -278,6 +299,7 @@ class HunkDiff(object):
         # TODO - create regions for old file too...
         # ADD and DEL are easy.
         if self.hunk_type == "ADD":
+            print("ADD")
             self.regions.append(DiffRegion(
                 "ADD",
                 self.new_line_start,
@@ -285,53 +307,84 @@ class HunkDiff(object):
                 self.new_line_start + self.new_hunk_len,
                 0))
         elif self.hunk_type == "DEL":
+            print("DEL")
             self.regions.append(DiffRegion(
-                "ADD",
+                "DEL",
                 self.new_line_start,
                 0,
                 self.new_line_start + self.new_hunk_len,
                 0))
         else:
-            # We have a chunk that's smaller than a single line
-            old_cur_line = self.old_line_start
-            old_cur_pos = 0
-            new_cur_line = self.new_line_start
-            new_cur_pos = 0
-            for diff_line in self.hunk_diff_lines[1:]:
-                print("####" + diff_line + "####")
-                if not diff_line:
-                    pass
-                elif diff_line[0] == ' ':
-                    # No changes here, just move the cursor
-                    chunk_len = len(diff_line) - 1
-                    old_cur_pos += chunk_len
-                    new_cur_pos += chunk_len
-                elif diff_line[0] == '~':
-                    # Next line
-                    old_cur_line += 1
-                    new_cur_line += 1
-                    old_cur_pos = 0
-                    new_cur_pos = 0
-                elif diff_line[0] == '+':
-                    # Add region
-                    chunk_len = len(diff_line) - 1
-                    self.regions.append(DiffRegion(
-                        "ADD",
-                        self.new_line_start,
-                        new_cur_pos,
-                        self.new_line_start + self.new_hunk_len - 1,
-                        new_cur_pos + chunk_len))
-                    new_cur_pos += chunk_len
-                elif diff_line[0] == '-':
-                    # Delete region
-                    chunk_len = len(diff_line) - 1
-                    self.regions.append(DiffRegion(
-                        "DEL",
-                        self.new_line_start,
-                        new_cur_pos,
-                        self.new_line_start + self.new_hunk_len - 1,
-                        new_cur_pos))
-                    old_cur_pos += chunk_len
+            # We have a chunk that's not just whole lines...
+            # Start by grouping the lines between the '~' lines.
+            add_chunks, del_chunks = self.sort_chunks()
+
+            # Handle ADD chunks.
+            add_start_line = self.new_line_start
+            cur_line = self.new_line_start
+            add_start_col = 0
+            cur_col = 0
+            in_add = False
+            for chunk in add_chunks:
+                for segment in chunk:
+                    if segment.startswith(' '):
+                        if in_add:
+                            # ADD region ends.
+                            self.regions.append(DiffRegion(
+                                "ADD",
+                                add_start_line,
+                                add_start_col,
+                                cur_line,
+                                cur_col))
+                        in_add = False
+                        cur_col += len(segment) - 1
+                    elif segment.startswith('+'):
+                        if not in_add:
+                            # ADD region starts.
+                            add_start_line = cur_line
+                            add_start_col = cur_col
+                        in_add = True
+                        cur_col += len(segment) - 1
+                    else:
+                        print("Unexpected segment: {} in {}".format(
+                            segment, chunk))
+
+                # End of that line.
+                cur_line += 1
+                cur_col = 0
+
+            # TODO - Handle DEL chunks too.
+            # ...but not interesting when we're only looking at the new file.
+
+    def sort_chunks(self):
+        """Sort the sub-chunks in this hunk into those which are interesting
+        for ADD regions, and those that are interesting for DEL regions.
+
+        Returns:
+            (add_chunks, del_chunks)
+        """
+        add_chunks = []
+        del_chunks = []
+        this_chunk = []
+        this_chunk_add = False
+        this_chunk_del = False
+        for line in self.hunk_diff_lines:
+            if line.startswith('~'):
+                if this_chunk_add:
+                    # Filter out the DEL sections
+                    add_chunks.append(
+                        [l for l in this_chunk if not l.startswith('-')])
+                if this_chunk_del:
+                    # Filter out the ADD sections
+                    del_chunks.append(
+                        [l for l in this_chunk if not l.startswith('+')])
+                this_chunk = []
+            else:
+                this_chunk.append(line)
+                this_chunk_add = this_chunk_add or line.startswith('+')
+                this_chunk_del = this_chunk_del or line.startswith('-')
+
+        return (add_chunks, del_chunks)
 
     def filespec(self):
         """Get the portion of code that this hunk refers to in the format
@@ -345,8 +398,7 @@ class HunkDiff(object):
             self.parse_diff()
         return [sublime.Region(
             view.text_point(r.start_line - 1, r.start_col),
-            view.text_point(r.end_line - 1, r.end_col))
-                for r in self.regions]
+            view.text_point(r.end_line - 1, r.end_col)) for r in self.regions]
 
 
 class DiffRegion(object):
@@ -366,12 +418,14 @@ class DiffRegion(object):
         self.start_col = start_col
         self.end_line = end_line
         self.end_col = end_col
+        print("@@@: {}, {}, {}, {}, {}".format(diff_type, start_line, start_col, end_line, end_col))
 
 
-def git_command(args):
+def git_command(args, cwd):
     """Wrapper to run a Git command."""
     p = subprocess.Popen(['git'] + args,
                          stdout=subprocess.PIPE,
-                         shell=True)
+                         shell=True,
+                         cwd=cwd)
     out, err = p.communicate()
     return out.decode('utf-8')
