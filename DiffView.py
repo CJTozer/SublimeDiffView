@@ -23,7 +23,12 @@ class DiffView(sublime_plugin.WindowCommand):
         self.preview = None
 
         # Use show_input_panel as show_quick_panel doesn't allow arbitrary data
-        self.window.show_input_panel("Diff against? [HEAD]", self.diff_args, self.do_diff, None, None)
+        self.window.show_input_panel(
+            "Diff against? [HEAD]",
+            self.diff_args,
+            self.do_diff,
+            None,
+            None)
 
     def do_diff(self, diff_args):
         """Compare the current codebase with the `diff_args`.
@@ -82,17 +87,21 @@ class DiffView(sublime_plugin.WindowCommand):
         Args:
             hunk_index: the selected index in the changed hunks list.
         """
-        # TODO - remove from all views in show_hunk_diff - then remove region erase from here.
+        # TODO - remove from all views in show_hunk_diff.
+        # ...then remove region erase from here.
         self.window.active_view().erase_regions(ADD_REGION_KEY)
         self.window.active_view().erase_regions(MOD_REGION_KEY)
         self.window.active_view().erase_regions(DEL_REGION_KEY)
 
         hunk = self.parser.changed_hunks[hunk_index]
         already_exists = self.window.find_open_file(hunk.file_diff.filename)
-        self.preview = self.window.open_file(hunk.filespec(), sublime.TRANSIENT | sublime.ENCODED_POSITION)
+        self.preview = self.window.open_file(
+            hunk.filespec(),
+            sublime.TRANSIENT | sublime.ENCODED_POSITION)
         if already_exists:
             self.preview = None
         hunk.file_diff.add_regions(self.window.active_view())
+
 
 class DiffHunksList(sublime_plugin.WindowCommand):
     """Resume the previous diff.
@@ -102,6 +111,7 @@ class DiffHunksList(sublime_plugin.WindowCommand):
     def run(self):
         if hasattr(self.window, 'last_diff'):
             self.window.last_diff.list_changed_hunks()
+
 
 class DiffParser(object):
 
@@ -122,13 +132,16 @@ class DiffParser(object):
 
     def _get_changed_files(self):
         files = []
-        for line in git_command(['diff', '--stat', self.diff_args]).split('\n'):
+        diff_stat = git_command(['diff', '--stat', self.diff_args])
+        for line in diff_stat.split('\n'):
             match = self.STAT_CHANGED_FILE.match(line)
             if match:
                 filename = match.group(1)
                 abs_filename = os.path.join(self.git_base, filename)
-                files.append(FileDiff(match.group(1), abs_filename, self.diff_args))
+                files.append(
+                    FileDiff(match.group(1), abs_filename, self.diff_args))
         return files
+
 
 class FileDiff(object):
 
@@ -136,7 +149,8 @@ class FileDiff(object):
     """Representation of a single file's diff.
 
     Args:
-        filename: The filename as given by Git - i.e. relative to the Git base directory.
+        filename: The filename as given by Git - i.e. relative to the Git base
+            directory.
         abs_filename: The absolute filename for this file.
         diff_args: The arguments to be used for the Git diff.
     """
@@ -152,16 +166,26 @@ class FileDiff(object):
     def get_hunks(self):
         """Get the changed hunks for this file.
 
-        Wrapper to force parsing only once, and only when the hunks are required.
+        Wrapper to force parsing only once, and only when the hunks are
+        required.
         """
         if not self.hunks:
             self.parse_diff()
         return self.hunks
 
     def parse_diff(self):
-        """If not already done, run the Git diff command, and parse the diff for this file into hunks."""
+        """If not already done, run the Git diff command, and parse the diff
+        for this file into hunks.
+        """
         if not self.diff_text:
-            self.diff_text = git_command(['diff', self.diff_args, '-U0', '--minimal', '--word-diff=porcelain', '--', self.filename])
+            self.diff_text = git_command(
+                ['diff',
+                 self.diff_args,
+                 '-U0',
+                 '--minimal',
+                 '--word-diff=porcelain',
+                 '--',
+                 self.filename])
             hunks = self.HUNK_MATCH.split(self.diff_text)
 
             # First item is the header - drop it
@@ -175,19 +199,26 @@ class FileDiff(object):
         """Add all highlighted regions to the view for this file."""
         view.add_regions(
             ADD_REGION_KEY,
-            [r for h in self.hunks for r in h.get_regions(view) if h.hunk_type == "ADD"],
+            [r for h in self.hunks for r in h.get_regions(view)
+                if h.hunk_type == "ADD"],
             "support.class",
             flags=sublime.HIDE_ON_MINIMAP | sublime.DRAW_NO_FILL)
         view.add_regions(
             MOD_REGION_KEY,
-            [r for h in self.hunks for r in h.get_regions(view) if h.hunk_type == "MOD"],
+            [r for h in self.hunks for r in h.get_regions(view)
+                if h.hunk_type == "MOD"],
             "string",
             flags=sublime.HIDE_ON_MINIMAP | sublime.DRAW_NO_FILL)
         view.add_regions(
             DEL_REGION_KEY,
-            [r for h in self.hunks for r in h.get_regions(view) if h.hunk_type == "DEL"],
+            [r for h in self.hunks for r in h.get_regions(view)
+                if h.hunk_type == "DEL"],
             "invalid",
-            flags=sublime.DRAW_EMPTY | sublime.HIDE_ON_MINIMAP | sublime.DRAW_EMPTY_AS_OVERWRITE | sublime.DRAW_NO_FILL)
+            flags=sublime.DRAW_EMPTY |
+            sublime.HIDE_ON_MINIMAP |
+            sublime.DRAW_EMPTY_AS_OVERWRITE |
+            sublime.DRAW_NO_FILL)
+
 
 class HunkDiff(object):
 
@@ -207,9 +238,11 @@ class HunkDiff(object):
 
         # Maches' meanings are:
         # - 0: start line in old file
-        # - 1: num lines removed from old file (0 for ADD, missing if it's a one-line change)
+        # - 1: num lines removed from old file (0 for ADD, missing if it's a
+        #      one-line change)
         # - 2: start line in new file
-        # - 3: num lines added to new file (0 for DEL, missing if it's a one-line change)
+        # - 3: num lines added to new file (0 for DEL, missing if it's a
+        #      one-line change)
         # - 4: the remainder of the hunk, after the header
         self.old_line_start = int(match[0])
         self.old_hunk_len = 1
@@ -238,24 +271,31 @@ class HunkDiff(object):
                                "-" * self.old_hunk_len)]
 
     def parse_diff(self):
-        """@@@ Unused - some logic to get more info out of the 'porcelain' diff style."""
+        """@@@ Unused.
+
+        Some logic to get more info out of the 'porcelain' diff style."""
         # TODO - more detailed diffs (better than just line-by-line)
-        # Need to track line number (and character position) as we run through the regions.
+        # Need to track line number (and character position) as we run through
+        # the regions.
+        #
         # Multiline adds and deletes are spread over multiple regions.
         for region in self.LINE_DELIM_MATCH.split(self.hunk_diff_text):
             print("$$$$" + region + "&&&&")
-            add_match = self.ADD_LINE_MATCH.match(region)
-            del_match = self.DEL_LINE_MATCH.match(region)
+            # add_match = self.ADD_LINE_MATCH.match(region)
+            # del_match = self.DEL_LINE_MATCH.match(region)
 
     def filespec(self):
-        """Get the portion of code that this hunk refers to in the format `filename:col:line`."""
-        return "{}:{}:0".format(self.file_diff.abs_filename, self.new_line_start)
+        """Get the portion of code that this hunk refers to in the format
+        `filename:col`.
+        """
+        return "{}:{}".format(self.file_diff.abs_filename, self.new_line_start)
 
     def get_regions(self, view):
         """Create a `sublime.Region` for each part of this hunk."""
         return [sublime.Region(
             view.text_point(self.new_line_start - 1, 0),
             view.text_point(self.new_line_start + self.new_hunk_len - 1, 0))]
+
 
 def git_command(args):
     """Wrapper to run a Git command."""
