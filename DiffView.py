@@ -3,17 +3,15 @@ import sublime_plugin
 import subprocess
 import re
 import os
-import tempfile
-import time
-import threading
 
 ADD_REGION_KEY = 'diffview-highlight-addition'
 MOD_REGION_KEY = 'diffview-highlight-modification'
 DEL_REGION_KEY = 'diffview-highlight-deletion'
 
+
 class DiffView(sublime_plugin.WindowCommand):
 
-    diff_base = ''
+    diff_args = ''
     """Main Sublime command for running a diff.
 
     Asks for input for what to diff against; a Git SHA/branch/tag.
@@ -25,23 +23,23 @@ class DiffView(sublime_plugin.WindowCommand):
         self.preview = None
 
         # Use show_input_panel as show_quick_panel doesn't allow arbitrary data
-        self.window.show_input_panel("Diff against? [HEAD]", self.diff_base, self.do_diff, None, None)
+        self.window.show_input_panel("Diff against? [HEAD]", self.diff_args, self.do_diff, None, None)
 
-    def do_diff(self, diff_base):
-        """Compare the current codebase with the `diff_base`.
+    def do_diff(self, diff_args):
+        """Compare the current codebase with the `diff_args`.
 
         Args:
-            diff_base: the base SHA/tag/branch to compare against.
+            diff_args: the base SHA/tag/branch to compare against.
         """
-        if diff_base == '':
-            diff_base = 'HEAD'
-        self.diff_base = diff_base
+        if diff_args == '':
+            diff_args = 'HEAD'
+        self.diff_args = diff_args
 
         # Record the original layout
         self.orig_layout = self.window.get_layout()
 
         # Create the diff parser
-        self.parser = DiffParser(self.diff_base)
+        self.parser = DiffParser(self.diff_args)
 
         # Show the list of changed hunks
         self.list_changed_hunks()
@@ -106,11 +104,17 @@ class DiffHunksList(sublime_plugin.WindowCommand):
             self.window.last_diff.list_changed_hunks()
 
 class DiffParser(object):
-    STAT_CHANGED_FILE = re.compile('\s*([\w\.\-\/]+)\s*\|')
 
-    def __init__(self, diff_base):
+    STAT_CHANGED_FILE = re.compile('\s*([\w\.\-\/]+)\s*\|')
+    """Representation of the entire diff.
+
+    Args:
+        diff_args: The arguments to be used for the Git diff.
+    """
+
+    def __init__(self, diff_args):
         self.git_base = git_command(['rev-parse', '--show-toplevel']).rstrip()
-        self.diff_base = diff_base
+        self.diff_args = diff_args
         self.changed_files = self._get_changed_files()
         self.changed_hunks = []
         for f in self.changed_files:
@@ -118,16 +122,24 @@ class DiffParser(object):
 
     def _get_changed_files(self):
         files = []
-        for line in git_command(['diff', '--stat', self.diff_base]).split('\n'):
+        for line in git_command(['diff', '--stat', self.diff_args]).split('\n'):
             match = self.STAT_CHANGED_FILE.match(line)
             if match:
                 filename = match.group(1)
                 abs_filename = os.path.join(self.git_base, filename)
-                files.append(FileDiff(match.group(1), abs_filename, self.diff_base))
+                files.append(FileDiff(match.group(1), abs_filename, self.diff_args))
         return files
 
 class FileDiff(object):
+
     HUNK_MATCH = re.compile('\r?\n@@ \-(\d+),?(\d*) \+(\d+),?(\d*) @@')
+    """Representation of a single file's diff.
+
+    Args:
+        filename: The filename as given by Git - i.e. relative to the Git base directory.
+        abs_filename: The absolute filename for this file.
+        diff_args: The arguments to be used for the Git diff.
+    """
 
     def __init__(self, filename, abs_filename, diff_args):
         self.filename = filename
@@ -138,11 +150,16 @@ class FileDiff(object):
         self.hunks = []
 
     def get_hunks(self):
+        """Get the changed hunks for this file.
+
+        Wrapper to force parsing only once, and only when the hunks are required.
+        """
         if not self.hunks:
             self.parse_diff()
         return self.hunks
 
     def parse_diff(self):
+        """If not already done, run the Git diff command, and parse the diff for this file into hunks."""
         if not self.diff_text:
             self.diff_text = git_command(['diff', self.diff_args, '-U0', '--minimal', '--word-diff=porcelain', '--', self.filename])
             hunks = self.HUNK_MATCH.split(self.diff_text)
@@ -155,27 +172,35 @@ class FileDiff(object):
                 hunks = hunks[match_len:]
 
     def add_regions(self, view):
+        """Add all highlighted regions to the view for this file."""
         view.add_regions(
             ADD_REGION_KEY,
-            [h.get_region(view) for h in self.hunks if h.hunk_type == "ADD"],
+            [r for h in self.hunks for r in h.get_regions(view) if h.hunk_type == "ADD"],
             "support.class",
             flags=sublime.HIDE_ON_MINIMAP | sublime.DRAW_NO_FILL)
         view.add_regions(
             MOD_REGION_KEY,
-            [h.get_region(view) for h in self.hunks if h.hunk_type == "MOD"],
+            [r for h in self.hunks for r in h.get_regions(view) if h.hunk_type == "MOD"],
             "string",
             flags=sublime.HIDE_ON_MINIMAP | sublime.DRAW_NO_FILL)
         view.add_regions(
             DEL_REGION_KEY,
-            [h.get_region(view) for h in self.hunks if h.hunk_type == "DEL"],
+            [r for h in self.hunks for r in h.get_regions(view) if h.hunk_type == "DEL"],
             "invalid",
             flags=sublime.DRAW_EMPTY | sublime.HIDE_ON_MINIMAP | sublime.DRAW_EMPTY_AS_OVERWRITE | sublime.DRAW_NO_FILL)
 
 class HunkDiff(object):
+
     NEWLINE_MATCH = re.compile('\r?\n')
     LINE_DELIM_MATCH = re.compile('\r?\n~\r?\n')
     ADD_LINE_MATCH = re.compile('^\+(.*)')
     DEL_LINE_MATCH = re.compile('^\-(.*)')
+    """Representation of a single 'hunk' from a Git diff.
+
+    Args:
+        file_diff: The parent `FileDiff` object.
+        match: The match parts of the hunk header.
+    """
 
     def __init__(self, file_diff, match):
         self.file_diff = file_diff
@@ -196,6 +221,7 @@ class HunkDiff(object):
             self.new_hunk_len = int(match[3])
         self.hunk_diff_lines = self.NEWLINE_MATCH.split(match[4])
 
+        # TODO - move 'type' to the specific region, not the whole hunk.
         if self.old_hunk_len == 0:
             self.hunk_type = "ADD"
         elif self.new_hunk_len == 0:
@@ -203,6 +229,7 @@ class HunkDiff(object):
         else:
             self.hunk_type = "MOD"
 
+        # Create the description that will appear in the quick_panel.
         self.description = [
             "{} : {}".format(file_diff.filename, self.new_line_start),
             self.hunk_diff_lines[0],
@@ -211,25 +238,27 @@ class HunkDiff(object):
                                "-" * self.old_hunk_len)]
 
     def parse_diff(self):
+        """@@@ Unused - some logic to get more info out of the 'porcelain' diff style."""
         # TODO - more detailed diffs (better than just line-by-line)
         # Need to track line number (and character position) as we run through the regions.
         # Multiline adds and deletes are spread over multiple regions.
-        old_line_num = self.old_line_start
-        new_line_num = self.new_line_start
         for region in self.LINE_DELIM_MATCH.split(self.hunk_diff_text):
             print("$$$$" + region + "&&&&")
             add_match = self.ADD_LINE_MATCH.match(region)
             del_match = self.DEL_LINE_MATCH.match(region)
 
     def filespec(self):
-        return "{}:{}".format(self.file_diff.abs_filename, self.new_line_start)
+        """Get the portion of code that this hunk refers to in the format `filename:col:line`."""
+        return "{}:{}:0".format(self.file_diff.abs_filename, self.new_line_start)
 
-    def get_region(self, view):
-        return sublime.Region(
+    def get_regions(self, view):
+        """Create a `sublime.Region` for each part of this hunk."""
+        return [sublime.Region(
             view.text_point(self.new_line_start - 1, 0),
-            view.text_point(self.new_line_start + self.new_hunk_len - 1, 0))
+            view.text_point(self.new_line_start + self.new_hunk_len - 1, 0))]
 
 def git_command(args):
+    """Wrapper to run a Git command."""
     p = subprocess.Popen(['git'] + args,
                          stdout=subprocess.PIPE,
                          shell=True)
