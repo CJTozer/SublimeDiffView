@@ -40,8 +40,10 @@ class DiffView(sublime_plugin.WindowCommand):
             diff_args = 'HEAD'
         self.diff_args = diff_args
 
-        # Record the original layout
-        self.orig_layout = self.window.get_layout()
+        # Record the starting view and position.
+        self.orig_view = self.window.active_view()
+        self.orig_pos = self.orig_view.sel()[0]
+        self.orig_viewport = self.orig_view.viewport_position()
 
         # Create the diff parser
         self.parser = DiffParser(self.diff_args)
@@ -76,6 +78,12 @@ class DiffView(sublime_plugin.WindowCommand):
             if self.preview:
                 self.preview.close()
                 self.preview = None
+
+            # Return to the original view/selection
+            self.window.focus_view(self.orig_view)
+            self.orig_view.sel().clear()
+            self.orig_view.sel().add(self.orig_pos)
+            self.orig_view.set_viewport_position(self.orig_viewport, animate=False)
             return
 
         self.last_hunk_index = hunk_index
