@@ -226,7 +226,7 @@ class FileDiff(object):
 class HunkDiff(object):
 
     NEWLINE_MATCH = re.compile('\r?\n')
-    LINE_DELIM_MATCH = re.compile('\r?\n~\r?\n')
+    LINE_DELIM_MATCH = re.compile('^~')
     ADD_LINE_MATCH = re.compile('^\+(.*)')
     DEL_LINE_MATCH = re.compile('^\-(.*)')
     """Representation of a single 'hunk' from a Git diff.
@@ -238,8 +238,9 @@ class HunkDiff(object):
 
     def __init__(self, file_diff, match):
         self.file_diff = file_diff
+        self.regions = []
 
-        # Maches' meanings are:
+        # Matches' meanings are:
         # - 0: start line in old file
         # - 1: num lines removed from old file (0 for ADD, missing if it's a
         #      one-line change)
@@ -257,7 +258,6 @@ class HunkDiff(object):
             self.new_hunk_len = int(match[3])
         self.hunk_diff_lines = self.NEWLINE_MATCH.split(match[4])
 
-        # TODO - move 'type' to the specific region, not the whole hunk.
         if self.old_hunk_len == 0:
             self.hunk_type = "ADD"
         elif self.new_hunk_len == 0:
@@ -274,18 +274,64 @@ class HunkDiff(object):
                                "-" * self.old_hunk_len)]
 
     def parse_diff(self):
-        """@@@ Unused.
-
-        Some logic to get more info out of the 'porcelain' diff style."""
-        # TODO - more detailed diffs (better than just line-by-line)
-        # Need to track line number (and character position) as we run through
-        # the regions.
-        #
-        # Multiline adds and deletes are spread over multiple regions.
-        for region in self.LINE_DELIM_MATCH.split(self.hunk_diff_text):
-            print("$$$$" + region + "&&&&")
-            # add_match = self.ADD_LINE_MATCH.match(region)
-            # del_match = self.DEL_LINE_MATCH.match(region)
+        """Generate representations of the changed regions."""
+        # TODO - create regions for old file too...
+        # ADD and DEL are easy.
+        if self.hunk_type == "ADD":
+            self.regions.append(DiffRegion(
+                "ADD",
+                self.new_line_start,
+                0,
+                self.new_line_start + self.new_hunk_len,
+                0))
+        elif self.hunk_type == "DEL":
+            self.regions.append(DiffRegion(
+                "ADD",
+                self.new_line_start,
+                0,
+                self.new_line_start + self.new_hunk_len,
+                0))
+        else:
+            # We have a chunk that's smaller than a single line
+            old_cur_line = self.old_line_start
+            old_cur_pos = 0
+            new_cur_line = self.new_line_start
+            new_cur_pos = 0
+            for diff_line in self.hunk_diff_lines[1:]:
+                print("####" + diff_line + "####")
+                if not diff_line:
+                    pass
+                elif diff_line[0] == ' ':
+                    # No changes here, just move the cursor
+                    chunk_len = len(diff_line) - 1
+                    old_cur_pos += chunk_len
+                    new_cur_pos += chunk_len
+                elif diff_line[0] == '~':
+                    # Next line
+                    old_cur_line += 1
+                    new_cur_line += 1
+                    old_cur_pos = 0
+                    new_cur_pos = 0
+                elif diff_line[0] == '+':
+                    # Add region
+                    chunk_len = len(diff_line) - 1
+                    self.regions.append(DiffRegion(
+                        "ADD",
+                        self.new_line_start,
+                        new_cur_pos,
+                        self.new_line_start + self.new_hunk_len - 1,
+                        new_cur_pos + chunk_len))
+                    new_cur_pos += chunk_len
+                elif diff_line[0] == '-':
+                    # Delete region
+                    chunk_len = len(diff_line) - 1
+                    self.regions.append(DiffRegion(
+                        "DEL",
+                        self.new_line_start,
+                        new_cur_pos,
+                        self.new_line_start + self.new_hunk_len - 1,
+                        new_cur_pos))
+                    old_cur_pos += chunk_len
 
     def filespec(self):
         """Get the portion of code that this hunk refers to in the format
@@ -295,9 +341,31 @@ class HunkDiff(object):
 
     def get_regions(self, view):
         """Create a `sublime.Region` for each part of this hunk."""
+        if not self.regions:
+            self.parse_diff()
         return [sublime.Region(
-            view.text_point(self.new_line_start - 1, 0),
-            view.text_point(self.new_line_start + self.new_hunk_len - 1, 0))]
+            view.text_point(r.start_line - 1, r.start_col),
+            view.text_point(r.end_line - 1, r.end_col))
+                for r in self.regions]
+
+
+class DiffRegion(object):
+    """Class representing a region that's changed.
+
+    Args:
+        type: "ADD", "MOD" or "DEL"
+        start_line: The line where the region starts
+        start_col: The column where the region starts
+        end_line: The line where the region ends
+        end_col: The column where the region ends
+    """
+
+    def __init__(self, diff_type, start_line, start_col, end_line, end_col):
+        self.diff_type = diff_type
+        self.start_line = start_line
+        self.start_col = start_col
+        self.end_line = end_line
+        self.end_col = end_col
 
 
 def git_command(args):
