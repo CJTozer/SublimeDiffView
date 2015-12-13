@@ -66,10 +66,11 @@ class DiffView(sublime_plugin.WindowCommand):
         Args:
             hunk_index: the selected index in the changed hunks list.
         """
-        # TODO - remove highlighting from all views?
-        self.window.active_view().erase_regions(ADD_REGION_KEY)
-        self.window.active_view().erase_regions(MOD_REGION_KEY)
-        self.window.active_view().erase_regions(DEL_REGION_KEY)
+        # Remove diff highlighting from all views.
+        for view in self.window.views():
+            view.erase_regions(ADD_REGION_KEY)
+            view.erase_regions(MOD_REGION_KEY)
+            view.erase_regions(DEL_REGION_KEY)
 
         if hunk_index == -1:
             if self.preview:
@@ -87,12 +88,6 @@ class DiffView(sublime_plugin.WindowCommand):
         Args:
             hunk_index: the selected index in the changed hunks list.
         """
-        # TODO - remove from all views in show_hunk_diff.
-        # ...then remove region erase from here.
-        self.window.active_view().erase_regions(ADD_REGION_KEY)
-        self.window.active_view().erase_regions(MOD_REGION_KEY)
-        self.window.active_view().erase_regions(DEL_REGION_KEY)
-
         hunk = self.parser.changed_hunks[hunk_index]
         already_exists = self.window.find_open_file(hunk.file_diff.filename)
         self.preview = self.window.open_file(
