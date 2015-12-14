@@ -49,8 +49,12 @@ class DiffView(sublime_plugin.WindowCommand):
         cwd = os.path.dirname(self.window.active_view().file_name())
         self.parser = DiffParser(self.diff_args, cwd)
 
-        # Show the list of changed hunks
-        self.list_changed_hunks()
+        if not self.parser.changed_hunks:
+            # No changes; say so
+            sublime.status_message("No changes...")
+        else:
+            # Show the list of changed hunks
+            self.list_changed_hunks()
 
     def list_changed_hunks(self):
         """Show a list of changed hunks in a quick panel."""
