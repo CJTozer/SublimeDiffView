@@ -35,9 +35,9 @@ class DiffView(sublime_plugin.WindowCommand):
         Args:
             diff_args: the base SHA/tag/branch to compare against.
         """
+        self.diff_args = diff_args
         if diff_args == '':
             diff_args = 'HEAD'
-        self.diff_args = diff_args
 
         # Record the starting view and position.
         self.orig_view = self.window.active_view()
