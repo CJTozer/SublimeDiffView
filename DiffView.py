@@ -150,12 +150,19 @@ class DiffParser(object):
             if match:
                 filename = match.group(1)
                 abs_filename = os.path.join(self.git_base, filename)
-                files.append(
-                    FileDiff(
-                        match.group(1),
-                        abs_filename,
-                        self.diff_args,
-                        self.git_base))
+
+                # Get the diff text for this file.
+                diff_text = git_command(
+                    ['diff',
+                     self.diff_args,
+                     '-U0',
+                     '--minimal',
+                     '--word-diff=porcelain',
+                     '--',
+                     filename],
+                     self.git_base)
+
+                files.append(FileDiff(filename, abs_filename, diff_text))
         return files
 
 
@@ -284,7 +291,6 @@ class HunkDiff(object):
         # TODO - create regions for old file too...
         # ADD and DEL are easy.
         if self.hunk_type == "ADD":
-            print("ADD")
             self.regions.append(DiffRegion(
                 "ADD",
                 self.new_line_start,
@@ -292,7 +298,6 @@ class HunkDiff(object):
                 self.new_line_start + self.new_hunk_len,
                 0))
         elif self.hunk_type == "DEL":
-            print("DEL")
             self.regions.append(DiffRegion(
                 "DEL",
                 self.new_line_start,
@@ -350,30 +355,22 @@ class HunkDiff(object):
         """
         add_chunks = []
         del_chunks = []
-        this_chunk = []
-        this_chunk_add = False
-        this_chunk_del = False
+        cur_chunk = []
+        cur_chunk_has_del = False
+        need_newline = False
         for line in self.hunk_diff_lines:
             if line.startswith('~'):
-                if this_chunk_add:
-                    # Filter out the DEL sections
-                    add_chunks.append(
-                        [l for l in this_chunk if not l.startswith('-')])
-                if this_chunk_del:
-                    # Filter out the ADD sections
-                    del_chunks.append(
-                        [l for l in this_chunk if not l.startswith('+')])
-
-                if this_chunk_add or this_chunk_del:
-                    # Blank lines need carrying over as they'll be used as a
-                    # prefix for the next lines
-                    this_chunk = []
-                this_chunk_add = False
-                this_chunk_del = False
+                if need_newline or not cur_chunk_has_del:
+                    add_chunks.append(cur_chunk)
+                    cur_chunk = []
+                    cur_chunk_has_del = False
+                    need_newline = False
+            elif line.startswith('-'):
+                cur_chunk_has_del = True
             else:
-                this_chunk.append(line)
-                this_chunk_add = this_chunk_add or line.startswith('+')
-                this_chunk_del = this_chunk_del or line.startswith('-')
+                cur_chunk.append(line)
+                if line.startswith('+'):
+                    need_newline = True
 
         return (add_chunks, del_chunks)
 
@@ -409,7 +406,6 @@ class DiffRegion(object):
         self.start_col = start_col
         self.end_line = end_line
         self.end_col = end_col
-        print("@@@: {}, {}, {}, {}, {}".format(diff_type, start_line, start_col, end_line, end_col))
 
 
 def git_command(args, cwd):
