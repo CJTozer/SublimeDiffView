@@ -20,7 +20,6 @@ class DiffView(sublime_plugin.WindowCommand):
     def run(self):
         self.window.last_diff = self
         self.last_hunk_index = 0
-        self.preview = None
 
         # Use show_input_panel as show_quick_panel doesn't allow arbitrary data
         self.window.show_input_panel(
@@ -80,10 +79,6 @@ class DiffView(sublime_plugin.WindowCommand):
             view.erase_regions(DEL_REGION_KEY)
 
         if hunk_index == -1:
-            if self.preview:
-                self.preview.close()
-                self.preview = None
-
             # Return to the original view/selection
             self.window.focus_view(self.orig_view)
             self.orig_view.sel().clear()
@@ -104,14 +99,9 @@ class DiffView(sublime_plugin.WindowCommand):
             hunk_index: the selected index in the changed hunks list.
         """
         hunk = self.parser.changed_hunks[hunk_index]
-        # TODO - don't think this works when the "already existing" file isn't
-        # the active view (it gets closed anyway)...
-        already_exists = self.window.find_open_file(hunk.file_diff.filename)
-        self.preview = self.window.open_file(
+        self.window.open_file(
             hunk.filespec(),
             sublime.TRANSIENT | sublime.ENCODED_POSITION)
-        if already_exists:
-            self.preview = None
         hunk.file_diff.add_regions(self.window.active_view())
 
 
