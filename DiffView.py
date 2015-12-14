@@ -39,11 +39,6 @@ class DiffView(sublime_plugin.WindowCommand):
         if diff_args == '':
             diff_args = 'HEAD'
 
-        # Record the starting view and position.
-        self.orig_view = self.window.active_view()
-        self.orig_pos = self.orig_view.sel()[0]
-        self.orig_viewport = self.orig_view.viewport_position()
-
         # Create the diff parser
         cwd = os.path.dirname(self.window.active_view().file_name())
         self.parser = DiffParser(self.diff_args, cwd)
@@ -57,6 +52,11 @@ class DiffView(sublime_plugin.WindowCommand):
 
     def list_changed_hunks(self):
         """Show a list of changed hunks in a quick panel."""
+        # Record the starting view and position.
+        self.orig_view = self.window.active_view()
+        self.orig_pos = self.orig_view.sel()[0]
+        self.orig_viewport = self.orig_view.viewport_position()
+
         self.window.show_quick_panel(
             [h.description for h in self.parser.changed_hunks],
             self.show_hunk_diff,
