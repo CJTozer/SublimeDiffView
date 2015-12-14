@@ -160,7 +160,7 @@ class DiffParser(object):
                      '--word-diff=porcelain',
                      '--',
                      filename],
-                     self.git_base)
+                    self.git_base)
 
                 files.append(FileDiff(filename, abs_filename, diff_text))
         return files
