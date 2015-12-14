@@ -414,7 +414,8 @@ class DiffRegion(object):
 
 def git_command(args, cwd):
     """Wrapper to run a Git command."""
-    p = subprocess.Popen(['git'] + args,
+    # Using shell, just pass a string to subprocess.
+    p = subprocess.Popen(" ".join(['git'] + args),
                          stdout=subprocess.PIPE,
                          shell=True,
                          cwd=cwd)
