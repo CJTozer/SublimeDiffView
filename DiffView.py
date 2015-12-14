@@ -51,7 +51,7 @@ class DiffView(sublime_plugin.WindowCommand):
 
         if not self.parser.changed_hunks:
             # No changes; say so
-            sublime.status_message("No changes...")
+            sublime.message_dialog("No changes to report...")
         else:
             # Show the list of changed hunks
             self.list_changed_hunks()
