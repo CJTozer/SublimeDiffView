@@ -57,10 +57,19 @@ class DiffView(sublime_plugin.WindowCommand):
         self.orig_pos = self.orig_view.sel()[0]
         self.orig_viewport = self.orig_view.viewport_position()
 
+        # Store old layout, then set layout to 2 columns.
+        self.orig_layout = self.window.layout()
+        self.window.set_layout(
+            {"cols": [0.0, 0.5, 1.0],
+             "rows": [0.0, 1.0],
+             "cells": [[0, 0, 1, 1], [1, 0, 2, 1]]})
+
+        # Start listening for the quick panel creation, then create it.
+        ViewFinder.instance().start_listen(self.quick_panel_found)
         self.window.show_quick_panel(
             [h.description for h in self.parser.changed_hunks],
             self.show_hunk_diff,
-            sublime.MONOSPACE_FONT,
+            sublime.MONOSPACE_FONT | sublime.KEEP_OPEN_ON_FOCUS_LOST,
             self.last_hunk_index,
             self.preview_hunk)
 
@@ -77,6 +86,9 @@ class DiffView(sublime_plugin.WindowCommand):
             view.erase_regions(ADD_REGION_KEY)
             view.erase_regions(MOD_REGION_KEY)
             view.erase_regions(DEL_REGION_KEY)
+
+        # Reset the layout.
+        self.window.set_layout(self.orig_layout)
 
         if hunk_index == -1:
             # Return to the original view/selection
@@ -99,10 +111,25 @@ class DiffView(sublime_plugin.WindowCommand):
             hunk_index: the selected index in the changed hunks list.
         """
         hunk = self.parser.changed_hunks[hunk_index]
-        self.window.open_file(
+        right_view = self.window.open_file(
             hunk.filespec(),
-            sublime.TRANSIENT | sublime.ENCODED_POSITION)
-        hunk.file_diff.add_regions(self.window.active_view())
+            flags=sublime.TRANSIENT |
+            sublime.ENCODED_POSITION |
+            sublime.FORCE_GROUP,
+            group=1)
+        hunk.file_diff.add_regions(right_view)
+
+        # Keep the focus in the quick panel
+        self.window.focus_group(0)
+        self.window.focus_view(self.qpanel)
+
+    def quick_panel_found(self, view):
+        """Callback to store the quick panel when found.
+
+        Args:
+            view: The quick panel view.
+        """
+        self.qpanel = view
 
 
 class DiffHunksList(sublime_plugin.WindowCommand):
@@ -400,6 +427,39 @@ class DiffRegion(object):
         self.start_col = start_col
         self.end_line = end_line
         self.end_col = end_col
+
+
+class ViewFinder(sublime_plugin.EventListener):
+    """Helper class for finding widgets that are created."""
+    _instance = None
+
+    def __init__(self):
+        self.__class__._instance = self
+        self._listening = False
+
+    def on_activated(self, view):
+        """Call the provided callback when a widget view is created.
+
+        Args:
+            view: The view to listen for widget creation in."""
+        if self._listening and view.settings().get('is_widget'):
+            self._listening = False
+            self.cb(view)
+
+    @classmethod
+    def instance(cls):
+        if cls._instance:
+            return cls._instance
+        else:
+            return cls()
+
+    def start_listen(self, cb):
+        """Start listening for widget creation.
+
+        Args:
+            cb: The callback to call when a widget is created."""
+        self.cb = cb
+        self._listening = True
 
 
 def git_command(args, cwd):
