@@ -4,6 +4,8 @@ import os
 import re
 import subprocess
 import tempfile
+import threading
+import time
 
 ADD_REGION_KEY = 'diffview-highlight-addition'
 MOD_REGION_KEY = 'diffview-highlight-modification'
@@ -156,7 +158,13 @@ class DiffView(sublime_plugin.WindowCommand):
             sublime.ENCODED_POSITION |
             sublime.FORCE_GROUP,
             group=1)
-        hunk.file_diff.add_new_regions(right_view)
+
+        def highlight_right_when_ready():
+            while right_view.is_loading():
+                time.sleep(0.1)
+            hunk.file_diff.add_new_regions(right_view)
+        t = threading.Thread(target=highlight_right_when_ready)
+        t.start()
 
         left_view = self.window.open_file(
             old_filespec,
@@ -164,7 +172,13 @@ class DiffView(sublime_plugin.WindowCommand):
             sublime.ENCODED_POSITION |
             sublime.FORCE_GROUP,
             group=0)
-        hunk.file_diff.add_old_regions(left_view)
+
+        def highlight_left_when_ready():
+            while left_view.is_loading():
+                time.sleep(0.1)
+            hunk.file_diff.add_old_regions(left_view)
+        t = threading.Thread(target=highlight_left_when_ready)
+        t.start()
 
         # Keep the focus in the quick panel
         self.window.focus_group(0)
