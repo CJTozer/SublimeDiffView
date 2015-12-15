@@ -482,6 +482,9 @@ class HunkDiff(object):
                                 cur_col))
                         in_del = False
                         cur_col += len(segment) - 1
+                        # Workaround a weird problem in Git diff
+                        if not segment.endswith(' '):
+                            cur_col += 1
                     elif segment.startswith('-'):
                         if not in_del:
                             # DEL region starts.
@@ -527,6 +530,7 @@ class HunkDiff(object):
                     need_newline = True
 
         # DEL chunks
+        cur_chunk = []
         for line in self.hunk_diff_lines:
             if line.startswith('~'):
                 if need_newline or not cur_chunk_has_add:
