@@ -15,9 +15,8 @@ class Constants(object):
         sublime.DRAW_NO_FILL)
     MOD_REGION_FLAGS = (sublime.DRAW_EMPTY |
         sublime.HIDE_ON_MINIMAP |
-        sublime.DRAW_EMPTY_AS_OVERWRITE |
         sublime.DRAW_NO_FILL)
-    MOD_REGION_FLAGS = (sublime.DRAW_EMPTY |
+    DEL_REGION_FLAGS = (sublime.DRAW_EMPTY |
         sublime.HIDE_ON_MINIMAP |
         sublime.DRAW_EMPTY_AS_OVERWRITE |
         sublime.DRAW_NO_FILL)

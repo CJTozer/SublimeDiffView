@@ -24,20 +24,20 @@ class HunkDiff(object):
 
         # Matches' meanings are:
         # - 0: start line in old file
+        self.old_line_start = int(match[0])
         # - 1: num lines removed from old file (0 for ADD, missing if it's a
         #      one-line change)
-        # - 2: start line in new file
-        # - 3: num lines added to new file (0 for DEL, missing if it's a
-        #      one-line change)
-        # - 4: the remainder of the hunk, after the header
-        self.old_line_start = int(match[0])
         self.old_hunk_len = 1
         if len(match[1]) > 0:
             self.old_hunk_len = int(match[1])
+        # - 2: start line in new file
         self.new_line_start = int(match[2])
+        # - 3: num lines added to new file (0 for DEL, missing if it's a
+        #      one-line change)
         self.new_hunk_len = 1
         if len(match[3]) > 0:
             self.new_hunk_len = int(match[3])
+        # - 4: the remainder of the hunk, after the header
         self.context = self.NEWLINE_MATCH.split(match[4])[0]
         self.hunk_diff_lines = self.NEWLINE_MATCH.split(match[4])[1:]
 
@@ -107,6 +107,13 @@ class HunkDiff(object):
                                 add_start_col,
                                 cur_line,
                                 cur_col))
+                            # Add a blank DEL region to the old regions.
+                            self.old_regions.append(DiffRegion(
+                                "DEL",
+                                self.old_line_start,
+                                add_start_col,
+                                self.old_line_start,
+                                add_start_col))
                         in_add = False
                         cur_col += len(segment) - 1
                     elif segment.startswith('+'):
@@ -146,6 +153,13 @@ class HunkDiff(object):
                                 del_start_col,
                                 cur_line,
                                 cur_col))
+                            # Add a blank ADD region to the new regions.
+                            self.new_regions.append(DiffRegion(
+                                "ADD",
+                                self.new_line_start,
+                                del_start_col,
+                                self.new_line_start,
+                                del_start_col))
                         in_del = False
                         cur_col += len(segment) - 1
                         # Workaround a weird problem in Git diff
