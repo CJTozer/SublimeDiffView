@@ -8,6 +8,9 @@ import tempfile
 ADD_REGION_KEY = 'diffview-highlight-addition'
 MOD_REGION_KEY = 'diffview-highlight-modification'
 DEL_REGION_KEY = 'diffview-highlight-deletion'
+ADD_STYLE = 'support.class'
+MOD_STYLE = 'string'
+DEL_STYLE = 'invalid'
 
 
 class DiffView(sublime_plugin.WindowCommand):
@@ -153,7 +156,7 @@ class DiffView(sublime_plugin.WindowCommand):
             sublime.ENCODED_POSITION |
             sublime.FORCE_GROUP,
             group=1)
-        hunk.file_diff.add_regions(right_view)
+        hunk.file_diff.add_new_regions(right_view)
 
         left_view = self.window.open_file(
             old_filespec,
@@ -161,6 +164,7 @@ class DiffView(sublime_plugin.WindowCommand):
             sublime.ENCODED_POSITION |
             sublime.FORCE_GROUP,
             group=0)
+        hunk.file_diff.add_old_regions(left_view)
 
         # Keep the focus in the quick panel
         self.window.focus_group(0)
@@ -272,27 +276,53 @@ class FileDiff(object):
             self.hunks.append(HunkDiff(self, hunks[:match_len]))
             hunks = hunks[match_len:]
 
-    def add_regions(self, view):
-        """Add all highlighted regions to the view for this file."""
+    def add_old_regions(self, view):
+        """Add all highlighted regions to the view for this (old) file."""
+        view.add_regions(
+            DEL_REGION_KEY,
+            [r for h in self.hunks for r in h.get_old_regions(view)
+                if h.hunk_type == "ADD"],
+            DEL_STYLE,
+            flags=sublime.DRAW_EMPTY |
+            sublime.HIDE_ON_MINIMAP |
+            sublime.DRAW_EMPTY_AS_OVERWRITE |
+            sublime.DRAW_NO_FILL)
+        view.add_regions(
+            MOD_REGION_KEY,
+            [r for h in self.hunks for r in h.get_old_regions(view)
+                if h.hunk_type == "MOD"],
+            MOD_STYLE,
+            flags=sublime.DRAW_EMPTY |
+            sublime.HIDE_ON_MINIMAP |
+            sublime.DRAW_NO_FILL)
         view.add_regions(
             ADD_REGION_KEY,
-            [r for h in self.hunks for r in h.get_regions(view)
+            [r for h in self.hunks for r in h.get_old_regions(view)
+                if h.hunk_type == "DEL"],
+            ADD_STYLE,
+            flags=sublime.HIDE_ON_MINIMAP | sublime.DRAW_NO_FILL)
+
+    def add_new_regions(self, view):
+        """Add all highlighted regions to the view for this (new) file."""
+        view.add_regions(
+            ADD_REGION_KEY,
+            [r for h in self.hunks for r in h.get_new_regions(view)
                 if h.hunk_type == "ADD"],
-            "support.class",
+            ADD_STYLE,
             flags=sublime.HIDE_ON_MINIMAP | sublime.DRAW_NO_FILL)
         view.add_regions(
             MOD_REGION_KEY,
-            [r for h in self.hunks for r in h.get_regions(view)
+            [r for h in self.hunks for r in h.get_new_regions(view)
                 if h.hunk_type == "MOD"],
-            "string",
+            MOD_STYLE,
             flags=sublime.DRAW_EMPTY |
             sublime.HIDE_ON_MINIMAP |
             sublime.DRAW_NO_FILL)
         view.add_regions(
             DEL_REGION_KEY,
-            [r for h in self.hunks for r in h.get_regions(view)
+            [r for h in self.hunks for r in h.get_new_regions(view)
                 if h.hunk_type == "DEL"],
-            "invalid",
+            DEL_STYLE,
             flags=sublime.DRAW_EMPTY |
             sublime.HIDE_ON_MINIMAP |
             sublime.DRAW_EMPTY_AS_OVERWRITE |
@@ -314,7 +344,8 @@ class HunkDiff(object):
 
     def __init__(self, file_diff, match):
         self.file_diff = file_diff
-        self.regions = []
+        self.old_regions = []
+        self.new_regions = []
 
         # Matches' meanings are:
         # - 0: start line in old file
@@ -352,17 +383,28 @@ class HunkDiff(object):
 
     def parse_diff(self):
         """Generate representations of the changed regions."""
-        # TODO - create regions for old file too...
         # ADD and DEL are easy.
         if self.hunk_type == "ADD":
-            self.regions.append(DiffRegion(
+            self.old_regions.append(DiffRegion(
+                "DEL",
+                self.old_line_start,
+                0,
+                self.old_line_start + self.old_hunk_len,
+                0))
+            self.new_regions.append(DiffRegion(
                 "ADD",
                 self.new_line_start,
                 0,
                 self.new_line_start + self.new_hunk_len,
                 0))
         elif self.hunk_type == "DEL":
-            self.regions.append(DiffRegion(
+            self.old_regions.append(DiffRegion(
+                "ADD",
+                self.old_line_start,
+                0,
+                self.old_line_start + self.old_hunk_len,
+                0))
+            self.new_regions.append(DiffRegion(
                 "DEL",
                 self.new_line_start,
                 0,
@@ -384,7 +426,7 @@ class HunkDiff(object):
                     if segment.startswith(' '):
                         if in_add:
                             # ADD region ends.
-                            self.regions.append(DiffRegion(
+                            self.new_regions.append(DiffRegion(
                                 "ADD",
                                 add_start_line,
                                 add_start_col,
@@ -409,6 +451,45 @@ class HunkDiff(object):
 
             # TODO - Handle DEL chunks too.
             # ...but not interesting when we're only looking at the new file.
+            del_start_line = self.old_line_start
+            cur_line = self.old_line_start
+            del_start_col = 0
+            cur_col = 0
+            in_del = False
+            for chunk in del_chunks:
+                print("@@@ Handling chunk:")
+                print(chunk)
+                for segment in chunk:
+                    print("@@ Handling segment:")
+                    print(segment)
+                    if segment.startswith(' '):
+                        print("@ space")
+                        if in_del:
+                            # DEL region ends.
+                            print("### ADDING REGION")
+                            self.old_regions.append(DiffRegion(
+                                "ADD",
+                                del_start_line,
+                                del_start_col,
+                                cur_line,
+                                cur_col))
+                        in_del = False
+                        cur_col += len(segment) - 1
+                    elif segment.startswith('-'):
+                        print("@ minus (%d, %d)" % (cur_line, cur_col))
+                        if not in_del:
+                            # DEL region starts.
+                            del_start_line = cur_line
+                            del_start_col = cur_col
+                        in_del = True
+                        cur_col += len(segment) - 1
+                    else:
+                        print("Unexpected segment: {} in {}".format(
+                            segment, chunk))
+
+                # End of that line.
+                cur_line += 1
+                cur_col = 0
 
     def sort_chunks(self):
         """Sort the sub-chunks in this hunk into those which are interesting
@@ -421,7 +502,10 @@ class HunkDiff(object):
         del_chunks = []
         cur_chunk = []
         cur_chunk_has_del = False
+        cur_chunk_has_add = False
         need_newline = False
+
+        # ADD chunks
         for line in self.hunk_diff_lines:
             if line.startswith('~'):
                 if need_newline or not cur_chunk_has_del:
@@ -434,6 +518,21 @@ class HunkDiff(object):
             else:
                 cur_chunk.append(line)
                 if line.startswith('+'):
+                    need_newline = True
+
+        # DEL chunks
+        for line in self.hunk_diff_lines:
+            if line.startswith('~'):
+                if need_newline or not cur_chunk_has_add:
+                    del_chunks.append(cur_chunk + [' '])
+                    cur_chunk = []
+                    cur_chunk_has_add = False
+                    need_newline = False
+            elif line.startswith('+'):
+                cur_chunk_has_add = True
+            else:
+                cur_chunk.append(line)
+                if line.startswith('-'):
                     need_newline = True
 
         return (add_chunks, del_chunks)
@@ -450,13 +549,24 @@ class HunkDiff(object):
             self.new_line_start)
         return (old_filespec, new_filespec)
 
-    def get_regions(self, view):
-        """Create a `sublime.Region` for each part of this hunk."""
-        if not self.regions:
+    def get_old_regions(self, view):
+        """Create a `sublime.Region` for each (old) part of this hunk."""
+        if not self.old_regions:
             self.parse_diff()
         return [sublime.Region(
             view.text_point(r.start_line - 1, r.start_col),
-            view.text_point(r.end_line - 1, r.end_col)) for r in self.regions]
+            view.text_point(r.end_line - 1, r.end_col))
+            for r in self.old_regions]
+
+    def get_new_regions(self, view):
+        """Create a `sublime.Region` for each (new) part of this hunk."""
+        if not self.new_regions:
+            self.parse_diff()
+            print([(r.start_line, r.start_col) for r in self.old_regions])
+        return [sublime.Region(
+            view.text_point(r.start_line - 1, r.start_col),
+            view.text_point(r.end_line - 1, r.end_col))
+            for r in self.new_regions]
 
 
 class DiffRegion(object):
