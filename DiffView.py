@@ -463,24 +463,17 @@ class HunkDiff(object):
                 cur_line += 1
                 cur_col = 0
 
-            # TODO - Handle DEL chunks too.
-            # ...but not interesting when we're only looking at the new file.
+            # Handle DEL chunks.
             del_start_line = self.old_line_start
             cur_line = self.old_line_start
             del_start_col = 0
             cur_col = 0
             in_del = False
             for chunk in del_chunks:
-                print("@@@ Handling chunk:")
-                print(chunk)
                 for segment in chunk:
-                    print("@@ Handling segment:")
-                    print(segment)
                     if segment.startswith(' '):
-                        print("@ space")
                         if in_del:
                             # DEL region ends.
-                            print("### ADDING REGION")
                             self.old_regions.append(DiffRegion(
                                 "ADD",
                                 del_start_line,
@@ -490,7 +483,6 @@ class HunkDiff(object):
                         in_del = False
                         cur_col += len(segment) - 1
                     elif segment.startswith('-'):
-                        print("@ minus (%d, %d)" % (cur_line, cur_col))
                         if not in_del:
                             # DEL region starts.
                             del_start_line = cur_line
@@ -576,7 +568,6 @@ class HunkDiff(object):
         """Create a `sublime.Region` for each (new) part of this hunk."""
         if not self.new_regions:
             self.parse_diff()
-            print([(r.start_line, r.start_col) for r in self.old_regions])
         return [sublime.Region(
             view.text_point(r.start_line - 1, r.start_col),
             view.text_point(r.end_line - 1, r.end_col))
