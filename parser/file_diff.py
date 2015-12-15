@@ -50,28 +50,23 @@ class FileDiff(object):
     def add_old_regions(self, view):
         """Add all highlighted regions to the view for this (old) file."""
         view.add_regions(
-            Constants.DEL_REGION_KEY,
+            Constants.ADD_REGION_KEY,
             [r for h in self.hunks for r in h.get_old_regions(view)
                 if h.hunk_type == "ADD"],
-            Constants.DEL_STYLE,
-            flags=sublime.DRAW_EMPTY |
-            sublime.HIDE_ON_MINIMAP |
-            sublime.DRAW_EMPTY_AS_OVERWRITE |
-            sublime.DRAW_NO_FILL)
+            Constants.ADD_REGION_STYLE,
+            flags=Constants.ADD_REGION_FLAGS)
         view.add_regions(
             Constants.MOD_REGION_KEY,
             [r for h in self.hunks for r in h.get_old_regions(view)
                 if h.hunk_type == "MOD"],
-            Constants.MOD_STYLE,
-            flags=sublime.DRAW_EMPTY |
-            sublime.HIDE_ON_MINIMAP |
-            sublime.DRAW_NO_FILL)
+            Constants.MOD_REGION_STYLE,
+            flags=Constants.MOD_REGION_FLAGS)
         view.add_regions(
-            Constants.ADD_REGION_KEY,
+            Constants.DEL_REGION_KEY,
             [r for h in self.hunks for r in h.get_old_regions(view)
                 if h.hunk_type == "DEL"],
-            Constants.ADD_STYLE,
-            flags=sublime.HIDE_ON_MINIMAP | sublime.DRAW_NO_FILL)
+            Constants.DEL_REGION_STYLE,
+            flags=Constants.DEL_REGION_FLAGS)
 
     def add_new_regions(self, view):
         """Add all highlighted regions to the view for this (new) file."""
@@ -79,22 +74,17 @@ class FileDiff(object):
             Constants.ADD_REGION_KEY,
             [r for h in self.hunks for r in h.get_new_regions(view)
                 if h.hunk_type == "ADD"],
-            Constants.ADD_STYLE,
-            flags=sublime.HIDE_ON_MINIMAP | sublime.DRAW_NO_FILL)
+            Constants.ADD_REGION_STYLE,
+            flags=Constants.ADD_REGION_FLAGS)
         view.add_regions(
             Constants.MOD_REGION_KEY,
             [r for h in self.hunks for r in h.get_new_regions(view)
                 if h.hunk_type == "MOD"],
-            Constants.MOD_STYLE,
-            flags=sublime.DRAW_EMPTY |
-            sublime.HIDE_ON_MINIMAP |
-            sublime.DRAW_NO_FILL)
+            Constants.MOD_REGION_STYLE,
+            flags=Constants.MOD_REGION_FLAGS)
         view.add_regions(
             Constants.DEL_REGION_KEY,
             [r for h in self.hunks for r in h.get_new_regions(view)
                 if h.hunk_type == "DEL"],
-            Constants.DEL_STYLE,
-            flags=sublime.DRAW_EMPTY |
-            sublime.HIDE_ON_MINIMAP |
-            sublime.DRAW_EMPTY_AS_OVERWRITE |
-            sublime.DRAW_NO_FILL)
+            Constants.DEL_REGION_STYLE,
+            flags=Constants.DEL_REGION_FLAGS)

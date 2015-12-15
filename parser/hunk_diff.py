@@ -126,17 +126,22 @@ class HunkDiff(object):
 
             # Handle DEL chunks.
             del_start_line = self.old_line_start
-            cur_line = self.old_line_start
+            cur_line = self.old_line_start - 1
             del_start_col = 0
             cur_col = 0
             in_del = False
             for chunk in del_chunks:
+                # End of that line.  Do this here (and minus 1 above) to make
+                # catching the final chunk easier.
+                cur_line += 1
+                cur_col = 0
+
                 for segment in chunk:
                     if segment.startswith(' '):
                         if in_del:
                             # DEL region ends.
                             self.old_regions.append(DiffRegion(
-                                "ADD",
+                                "DEL",
                                 del_start_line,
                                 del_start_col,
                                 cur_line,
@@ -157,9 +162,14 @@ class HunkDiff(object):
                         print("Unexpected segment: {} in {}".format(
                             segment, chunk))
 
-                # End of that line.
-                cur_line += 1
-                cur_col = 0
+            if in_del:
+                # Add the last chunk in...
+                self.old_regions.append(DiffRegion(
+                    "DEL",
+                    del_start_line,
+                    del_start_col,
+                    cur_line,
+                    cur_col))
 
     def sort_chunks(self):
         """Sort the sub-chunks in this hunk into those which are interesting
@@ -195,7 +205,8 @@ class HunkDiff(object):
         for line in self.hunk_diff_lines:
             if line.startswith('~'):
                 if need_newline or not cur_chunk_has_add:
-                    del_chunks.append(cur_chunk + [' '])
+                    print(cur_chunk)
+                    del_chunks.append(cur_chunk)
                     cur_chunk = []
                     cur_chunk_has_add = False
                     need_newline = False
