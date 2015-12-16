@@ -1,5 +1,4 @@
 import re
-import sublime
 
 from .hunk_diff import HunkDiff
 from ..util.constants import Constants

@@ -1,5 +1,6 @@
 import subprocess
 
+
 def git_command(args, cwd):
     """Wrapper to run a Git command."""
     # Using shell, just pass a string to subprocess.
