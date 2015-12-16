@@ -148,18 +148,21 @@ class DiffView(sublime_plugin.WindowCommand):
         """
         hunk = self.parser.changed_hunks[hunk_index]
         (old_filespec, new_filespec) = hunk.filespecs()
+
+        def highlight_when_ready(view, highlight_fn):
+            while view.is_loading():
+                time.sleep(0.1)
+            highlight_fn(view)
+
         right_view = self.window.open_file(
             new_filespec,
             flags=sublime.TRANSIENT |
             sublime.ENCODED_POSITION |
             sublime.FORCE_GROUP,
             group=1)
-
-        def highlight_right_when_ready():
-            while right_view.is_loading():
-                time.sleep(0.1)
-            hunk.file_diff.add_new_regions(right_view)
-        t = threading.Thread(target=highlight_right_when_ready)
+        t = threading.Thread(
+            target=highlight_when_ready,
+            args=(right_view, hunk.file_diff.add_new_regions))
         t.start()
 
         left_view = self.window.open_file(
@@ -169,12 +172,9 @@ class DiffView(sublime_plugin.WindowCommand):
             sublime.FORCE_GROUP,
             group=0)
         left_view.set_read_only(True)
-
-        def highlight_left_when_ready():
-            while left_view.is_loading():
-                time.sleep(0.1)
-            hunk.file_diff.add_old_regions(left_view)
-        t = threading.Thread(target=highlight_left_when_ready)
+        t = threading.Thread(
+            target=highlight_when_ready,
+            args=(left_view, hunk.file_diff.add_old_regions))
         t.start()
 
         # Keep the focus in the quick panel
