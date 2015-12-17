@@ -1,4 +1,31 @@
+from abc import ABCMeta, abstractmethod
 import subprocess
+
+
+class VCSHelper(object):
+    __metaclass__ = ABCMeta
+
+    @classmethod
+    def get_helper(cwd):
+        """@@@"""
+        pass
+
+    @abstractmethod
+    def get_changed_files():
+        """@@@"""
+        pass
+
+
+class GitHelper(VCSHelper):
+
+    def get_changed_files():
+        pass
+
+
+class SVNHelper(VCSHelper):
+
+    def get_changed_files():
+        pass
 
 
 def git_command(args, cwd):
