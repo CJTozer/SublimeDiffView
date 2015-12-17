@@ -20,9 +20,10 @@ class VCSHelper(object):
         # Check for a Git repo first
         try:
             p = subprocess.Popen(
-                ['git', 'rev-parse', '--show-toplevel'],
+                'git rev-parse --show-toplevel',
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
+                shell=True,
                 cwd=cwd)
             out, err = p.communicate()
             if not err:
@@ -49,8 +50,13 @@ class VCSHelper(object):
             pass
 
     @abstractmethod
-    def get_changed_files():
-        """@@@"""
+    def get_changed_files(self, diff_args):
+        """Get a list of changed files."""
+        pass
+
+    @abstractmethod
+    def get_file_content(self, filename, version):
+        """Get the contents of a file at a specific version."""
         pass
 
 
@@ -59,17 +65,15 @@ class GitHelper(VCSHelper):
     STAT_CHANGED_FILE = re.compile('\s*([\w\.\-\/]+)\s*\|')
     """VCSHelper implementation for Git repositories."""
 
-    def __init__(self, repo_base, diff_args):
+    def __init__(self, repo_base):
         self.git_base = repo_base
-        self.diff_args = diff_args
         self.got_changed_files = False
         self.changed_files = []
 
-    def get_changed_files(self):
+    def get_changed_files(self, diff_args):
         files = []
         if not self.got_changed_files:
-            diff_stat = self.git_command(
-                ['diff', '--stat', self.diff_args], self.repo_base)
+            diff_stat = self.git_command(['diff', '--stat', diff_args])
             for line in diff_stat.split('\n'):
                 match = self.STAT_CHANGED_FILE.match(line)
                 if match:
@@ -77,47 +81,37 @@ class GitHelper(VCSHelper):
                     abs_filename = os.path.join(self.git_base, filename)
 
                     # Get the diff text for this file.
-                    diff_text = git_command(
+                    diff_text = self.git_command(
                         ['diff',
-                         self.diff_args,
+                         diff_args,
                          '-U0',
                          '--minimal',
                          '--word-diff=porcelain',
                          '--',
-                         filename],
-                        self.git_base)
-
+                         filename])
                     files.append(FileDiff(filename, abs_filename, diff_text))
         self.got_changed_files = True
         return files
 
-    def git_command(args, cwd):
+    def get_file_content(self, filename, version):
+        git_args = ['show', '{}:{}'.format(version, filename)]
+        return self.git_command(git_args)
+
+    def git_command(self, args):
         """Wrapper to run a Git command."""
         # Using shell, just pass a string to subprocess.
         p = subprocess.Popen(" ".join(['git'] + args),
                              stdout=subprocess.PIPE,
                              shell=True,
-                             cwd=cwd)
+                             cwd=self.git_base)
         out, err = p.communicate()
         return out.decode('utf-8')
 
 
 class SVNHelper(VCSHelper):
 
-    def __init__(self, repo_base, diff_args):
+    def __init__(self, repo_base):
         self.svn_base = repo_base
-        self.diff_args = diff_args
 
-    def get_changed_files(self):
+    def get_changed_files(self, diff_args):
         return []
-
-
-def git_command(args, cwd):
-    """Wrapper to run a Git command."""
-    # Using shell, just pass a string to subprocess.
-    p = subprocess.Popen(" ".join(['git'] + args),
-                         stdout=subprocess.PIPE,
-                         shell=True,
-                         cwd=cwd)
-    out, err = p.communicate()
-    return out.decode('utf-8')

@@ -1,12 +1,10 @@
 import sublime
 import sublime_plugin
 import os
-import tempfile
 import threading
 import time
 
 from .util.view_finder import ViewFinder
-from .util.vcs import git_command
 from .util.constants import Constants
 from .parser.diff_parser import DiffParser
 
@@ -22,7 +20,6 @@ class DiffView(sublime_plugin.WindowCommand):
     def run(self):
         self.window.last_diff = self
         self.last_hunk_index = 0
-        self.temp_dir = tempfile.mkdtemp()
 
         # Use show_input_panel as show_quick_panel doesn't allow arbitrary data
         self.window.show_input_panel(
@@ -46,44 +43,12 @@ class DiffView(sublime_plugin.WindowCommand):
         cwd = os.path.dirname(self.window.active_view().file_name())
         self.parser = DiffParser(self.diff_args, cwd)
 
-        # Create the required temporary files
-        self.create_files()
-
         if not self.parser.changed_hunks:
             # No changes; say so
             sublime.message_dialog("No changes to report...")
         else:
             # Show the list of changed hunks
             self.list_changed_hunks()
-
-    def create_files(self):
-        """Create all the files needed to show the diffs."""
-        for changed_file in self.parser.changed_files:
-            changed_file.old_file = os.path.join(
-                self.temp_dir,
-                'old',
-                changed_file.filename)
-            old_dir = os.path.dirname(changed_file.old_file)
-
-            if not os.path.exists(old_dir):
-                os.makedirs(old_dir)
-            with open(changed_file.old_file, 'w') as f:
-                git_args = [
-                    'show',
-                    '{}:{}'.format(self.diff_args, changed_file.filename)]
-                old_file_content = git_command(git_args, self.parser.git_base)
-                f.write(old_file_content.replace('\r\n', '\n'))
-
-            # TODO - when doing more complex diffs, need to grab a blob with
-            # `git show` like above, and copy to the 'new' temporary directory.
-            # changed_file.new_file = os.path.join(
-            #     self.temp_dir,
-            #     'new',
-            #     changed_file.filename)
-            # new_dir = os.path.dirname(changed_file.new_file)
-            # if not os.path.exists(new_dir):
-            #     os.makedirs(new_dir)
-            # shutil.copyfile(changed_file.abs_filename, changed_file.new_file)
 
     def list_changed_hunks(self):
         """Show a list of changed hunks in a quick panel."""
