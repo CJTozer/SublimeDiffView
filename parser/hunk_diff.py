@@ -219,7 +219,6 @@ class HunkDiff(object):
         for line in self.hunk_diff_lines:
             if line.startswith('~'):
                 if need_newline or not cur_chunk_has_add:
-                    print(cur_chunk)
                     del_chunks.append(cur_chunk)
                     cur_chunk = []
                     cur_chunk_has_add = False
