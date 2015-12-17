@@ -21,6 +21,7 @@ class HunkDiff(object):
         self.file_diff = file_diff
         self.old_regions = []
         self.new_regions = []
+        self.concise_description = False
 
         # Matches' meanings are:
         # - 0: start line in old file
@@ -49,12 +50,17 @@ class HunkDiff(object):
             self.hunk_type = "MOD"
 
         # Create the description that will appear in the quick_panel.
-        self.description = [
-            "{} : {}".format(file_diff.filename, self.new_line_start),
-            self.context,
-            "{} | {}{}".format(self.old_hunk_len + self.new_hunk_len,
-                               "+" * self.new_hunk_len,
-                               "-" * self.old_hunk_len)]
+        if self.concise_description:
+            self.description = "{}:{}".format(
+                file_diff.filename,
+                self.new_line_start)
+        else:
+            self.description = [
+                "{} : {}".format(file_diff.filename, self.new_line_start),
+                self.context,
+                "{} | {}{}".format(self.old_hunk_len + self.new_hunk_len,
+                                   "+" * self.new_hunk_len,
+                                   "-" * self.old_hunk_len)]
 
     def parse_diff(self):
         """Generate representations of the changed regions."""
