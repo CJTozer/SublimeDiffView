@@ -2,7 +2,7 @@ import os
 import re
 
 from .file_diff import FileDiff
-from ..util.vcs import git_command
+from ..util.vcs import git_command, VCSHelper
 
 
 class DiffParser(object):
@@ -17,6 +17,7 @@ class DiffParser(object):
 
     def __init__(self, diff_args, cwd):
         self.cwd = cwd
+        self.vcs_helper = VCSHelper.get_helper(self.cwd)
         self.git_base = git_command(
             ['rev-parse', '--show-toplevel'], self.cwd).rstrip()
         self.diff_args = diff_args
