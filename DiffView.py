@@ -22,9 +22,8 @@ class DiffView(sublime_plugin.WindowCommand):
         self.last_hunk_index = 0
 
         # Use show_input_panel as show_quick_panel doesn't allow arbitrary data
-        # TODO - different input panel text for Git and SVN
         self.window.show_input_panel(
-            "Diff against? [HEAD]",
+            "Diff arguments?",
             self.diff_args,
             self.do_diff,
             None,
