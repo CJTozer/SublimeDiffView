@@ -108,7 +108,7 @@ class GitHelper(VCSHelper):
 
 class SVNHelper(VCSHelper):
 
-    STATUS_CHANGED_FILE = re.compile('\s*[AM]\s*([\w\.\-\/\\\\]+)')
+    STATUS_CHANGED_FILE = re.compile('\s*[AM][\+CMLSKOTB\s]*([\w\.\-\/\\\\]+)')
 
     def __init__(self, repo_base):
         self.svn_base = repo_base

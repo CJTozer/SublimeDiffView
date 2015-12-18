@@ -20,6 +20,8 @@ class HunkDiff(object):
         self.file_diff = file_diff
         self.old_regions = []
         self.new_regions = []
+        self.old_line_focus = -1
+        self.new_line_focus = -1
         self.concise_description = False
 
         # Matches' meanings are:
@@ -113,6 +115,14 @@ class HunkDiff(object):
                     old_del_start = old_cur_line
                     in_del = True
 
+            # If we've just found the first interesting part, that's where the
+            # focus should be for this hunk.
+            if not line.startswith(' '):
+                if self.old_line_focus == -1:
+                    self.old_line_focus = old_cur_line
+                if self.new_line_focus == -1:
+                    self.new_line_focus = new_cur_line
+
             # End of that line.
             if not line.startswith('+'):
                 old_cur_line += 1
@@ -169,14 +179,14 @@ class HunkDiff(object):
 
     def filespecs(self):
         """Get the portion of code that this hunk refers to in the format
-        `(old_filename:old_line, new_filename:new_line`.
+        `(old_filename:old_line, new_filename:new_line)`.
         """
         old_filespec = "{}:{}".format(
             self.file_diff.old_file,
-            self.old_line_start)
+            self.old_line_focus)
         new_filespec = "{}:{}".format(
             self.file_diff.abs_filename,
-            self.new_line_start)
+            self.new_line_focus)
         return (old_filespec, new_filespec)
 
     def get_old_regions(self, view):
