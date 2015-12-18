@@ -56,6 +56,20 @@ class VCSHelper(object):
         pass
 
     @abstractmethod
+    def get_file_versions(self, diff_args):
+        """Get both the versions of the file.
+
+        This returns the 'version' for the old and new file, as it needs to be
+        passed in to `get_file_content`.
+
+        An empty string means that the file is the working copy version.
+
+        Args:
+            diff_args: The diff arguments.
+        """
+        pass
+
+    @abstractmethod
     def get_file_content(self, filename, version):
         """Get the contents of a file at a specific version."""
         pass
@@ -64,6 +78,8 @@ class VCSHelper(object):
 class GitHelper(VCSHelper):
 
     STAT_CHANGED_FILE = re.compile('\s*([\w\.\-\/]+)\s*\|')
+    DIFF_MATCH_MERGE_BASE = re.compile('(.*)\.\.\.(.*)')
+    DIFF_MATCH = re.compile('(.*)\.\.(.*)')
     """VCSHelper implementation for Git repositories."""
 
     def __init__(self, repo_base):
@@ -91,6 +107,28 @@ class GitHelper(VCSHelper):
         self.got_changed_files = True
         return files
 
+    def get_file_versions(self, diff_args):
+        # Merge base diff
+        match = self.DIFF_MATCH_MERGE_BASE.match(diff_args)
+        if match:
+            merge_base = self.git_command(
+                ['merge_base',
+                match.group(1),
+                match.group(2)])
+            return (merge_base, match.group(2))
+
+        # Normal diff
+        match = self.DIFF_MATCH.match(diff_args)
+        if match:
+            return (match.group(1), match.group(2))
+
+        if diff_args != '':
+            # WC comparison
+            return (diff_args, '')
+
+        # HEAD to WC comparison
+        return ('HEAD', '')
+
     def get_file_content(self, filename, version):
         git_args = ['show', '{}:{}'.format(version, filename)]
         return self.git_command(git_args)
@@ -117,7 +155,7 @@ class SVNHelper(VCSHelper):
     def get_changed_files(self, diff_args):
         files = []
         if not self.got_changed_files:
-            status_text = self.svn_command(['status'])
+            status_text = self.svn_command(['diff', '--summarize'])
             for line in status_text.split('\n'):
                 match = self.STATUS_CHANGED_FILE.match(line)
                 if match:

@@ -21,33 +21,49 @@ class DiffParser(object):
         for f in self.changed_files:
             self.changed_hunks += f.get_hunks()
 
-        # Create the required temporary files
-        self.create_files()
+        # Set up the required files
+        self.setup_files()
 
-    def create_files(self):
+    def setup_files(self):
         """Create all the files needed to show the diffs."""
+        (old_ver, new_ver) = self.vcs_helper.get_file_versions(self.diff_args)
+        print((old_ver, new_ver))
+
         for changed_file in self.changed_files:
-            changed_file.old_file = os.path.join(
-                self.temp_dir,
-                'old',
-                changed_file.filename)
-            old_dir = os.path.dirname(changed_file.old_file)
+            if old_ver == '':
+                # Old file is working copy
+                changed_file.old_file = changed_file.abs_filename
+            else:
+                # Get the old file contents in the temporary dir.
+                changed_file.old_file = os.path.join(
+                    self.temp_dir,
+                    'old',
+                    changed_file.filename)
+                old_dir = os.path.dirname(changed_file.old_file)
 
-            if not os.path.exists(old_dir):
-                os.makedirs(old_dir)
-            with open(changed_file.old_file, 'w') as f:
-                old_file_content = self.vcs_helper.get_file_content(
-                    changed_file.filename,
-                    self.diff_args)
-                f.write(old_file_content.replace('\r\n', '\n'))
+                if not os.path.exists(old_dir):
+                    os.makedirs(old_dir)
+                with open(changed_file.old_file, 'w') as f:
+                    old_file_content = self.vcs_helper.get_file_content(
+                        changed_file.filename,
+                        old_ver)
+                    f.write(old_file_content.replace('\r\n', '\n'))
 
-            # TODO - when doing more complex diffs, need to grab a blob with
-            # `git show` like above, and copy to the 'new' temporary directory.
-            # changed_file.new_file = os.path.join(
-            #     self.temp_dir,
-            #     'new',
-            #     changed_file.filename)
-            # new_dir = os.path.dirname(changed_file.new_file)
-            # if not os.path.exists(new_dir):
-            #     os.makedirs(new_dir)
-            # shutil.copyfile(changed_file.abs_filename, changed_file.new_file)
+            if new_ver == '':
+                # New file is working copy
+                changed_file.new_file = changed_file.abs_filename
+            else:
+                # Get the new file contents in the temporary dir.
+                changed_file.new_file = os.path.join(
+                    self.temp_dir,
+                    'new',
+                    changed_file.filename)
+                new_dir = os.path.dirname(changed_file.new_file)
+
+                if not os.path.exists(new_dir):
+                    os.makedirs(new_dir)
+                with open(changed_file.new_file, 'w') as f:
+                    new_file_content = self.vcs_helper.get_file_content(
+                        changed_file.filename,
+                        new_ver)
+                    f.write(new_file_content.replace('\r\n', '\n'))

@@ -20,6 +20,7 @@ class FileDiff(object):
         self.filename = filename
         self.abs_filename = abs_filename
         self.old_file = 'UNDEFINED'
+        self.new_file = 'UNDEFINED'
         self.diff_text = diff_text
         self.hunks = []
 
