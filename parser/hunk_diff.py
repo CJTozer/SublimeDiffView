@@ -58,10 +58,10 @@ class HunkDiff(object):
         if self.concise_description:
             self.description = "{}:{}".format(
                 self.file_diff.filename,
-                self.new_line_start)
+                self.new_line_focus)
         else:
             self.description = [
-                "{} : {}".format(self.file_diff.filename, self.new_line_start),
+                "{} : {}".format(self.file_diff.filename, self.new_line_focus),
                 self.context,
                 "{} | {}{}".format(self.add_lines + self.del_lines,
                                    "+" * self.add_lines,
