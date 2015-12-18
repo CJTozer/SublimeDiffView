@@ -41,38 +41,28 @@ class HunkDiff(object):
         self.context = self.NEWLINE_MATCH.split(match[4])[0]
         self.hunk_diff_lines = self.NEWLINE_MATCH.split(match[4])[1:]
 
-        self.add_lines = 0
-        self.del_lines = 0
         if self.old_hunk_len == 0:
             self.hunk_type = "ADD"
-            self.add_lines = self.new_hunk_len
         elif self.new_hunk_len == 0:
             self.hunk_type = "DEL"
-            self.del_lines = self.old_hunk_len
         else:
             self.hunk_type = "MOD"
 
-    def description(self):
-        """Return the hunk description that will appear in the quick_panel."""
-        self.parse_diff()
+        # Create the description that will appear in the quick_panel.
         if self.concise_description:
-            return "{}:{}".format(
-                self.file_diff.filename,
+            self.description = "{}:{}".format(
+                file_diff.filename,
                 self.new_line_start)
         else:
-            return [
-                "{} : {}".format(self.file_diff.filename, self.new_line_start),
+            self.description = [
+                "{} : {}".format(file_diff.filename, self.new_line_start),
                 self.context,
                 "{} | {}{}".format(self.old_hunk_len + self.new_hunk_len,
-                                   "+" * self.add_lines,
-                                   "-" * self.del_lines)]
+                                   "+" * self.new_hunk_len,
+                                   "-" * self.old_hunk_len)]
 
     def parse_diff(self):
         """Generate representations of the changed regions."""
-        if self.old_regions or self.new_regions:
-            # Already parsed
-            return
-
         # ADD and DEL are easy.
         if self.hunk_type == "ADD":
             self.old_regions.append(DiffRegion(
@@ -103,63 +93,63 @@ class HunkDiff(object):
         else:
             old_cur_line = self.old_line_start
             new_cur_line = self.new_line_start
+            old_add_line = 0
             new_add_start = 0
             old_del_start = 0
+            new_del_line = 0
             in_add = False
             in_del = False
 
             for line in self.hunk_diff_lines:
-                if in_add and not line.startswith('+'):
-                    # ADD region ends.
-                    self.new_regions.append(DiffRegion(
-                        "ADD",
-                        new_add_start,
-                        0,
-                        new_cur_line,
-                        0))
-                    in_add = False
-                if in_del and not line.startswith('-'):
-                    # DEL region ends.
-                    self.old_regions.append(DiffRegion(
-                        "DEL",
-                        old_del_start,
-                        0,
-                        old_cur_line,
-                        0))
-                    in_del = False
-
-                if line.startswith('+'):
-                    self.add_lines += 1
+                if line.startswith(' '):
+                    if in_add:
+                        # ADD region ends.
+                        self.new_regions.append(DiffRegion(
+                            "ADD",
+                            new_add_start,
+                            0,
+                            new_cur_line,
+                            0))
+                        # Add a blank DEL region to the old regions.
+                        self.old_regions.append(DiffRegion(
+                            "DEL",
+                            old_add_line,
+                            0,
+                            old_add_line,
+                            0))
+                        in_add = False
+                    if in_del:
+                        # DEL region ends.
+                        self.old_regions.append(DiffRegion(
+                            "DEL",
+                            old_del_start,
+                            0,
+                            old_cur_line,
+                            0))
+                        # Add a blank ADD region to the old regions.
+                        self.new_regions.append(DiffRegion(
+                            "ADD",
+                            new_del_line,
+                            0,
+                            new_del_line,
+                            0))
+                        in_del = False
+                elif line.startswith('+'):
                     if not in_add:
                         new_add_start = new_cur_line
+                        old_add_line = old_cur_line
                         in_add = True
                 elif line.startswith('-'):
-                    self.del_lines += 1
                     if not in_del:
+                        new_del_line = new_cur_line
                         old_del_start = old_cur_line
                         in_del = True
+                else:
+                    print("Unexpected line: {} in {}".format(line))
 
                 # End of that line.
-                if not line.startswith('+'):
-                    old_cur_line += 1
-                if not line.startswith('-'):
-                    new_cur_line += 1
-
-            if in_add:
-                self.new_regions.append(DiffRegion(
-                    "ADD",
-                    new_add_start,
-                    0,
-                    new_cur_line,
-                    0))
-            if in_del:
-                self.old_regions.append(DiffRegion(
-                    "DEL",
-                    old_del_start,
-                    0,
-                    old_cur_line,
-                    0))
-
+                old_cur_line += 1
+                new_cur_line += 1
 
     def sort_chunks(self):
         """Sort the sub-chunks in this hunk into those which are interesting

@@ -22,6 +22,7 @@ class DiffView(sublime_plugin.WindowCommand):
         self.last_hunk_index = 0
 
         # Use show_input_panel as show_quick_panel doesn't allow arbitrary data
+        # TODO - different input panel text for Git and SVN
         self.window.show_input_panel(
             "Diff against? [HEAD]",
             self.diff_args,
@@ -36,8 +37,6 @@ class DiffView(sublime_plugin.WindowCommand):
             diff_args: the base SHA/tag/branch to compare against.
         """
         self.diff_args = diff_args
-        if diff_args == '':
-            diff_args = 'HEAD'
 
         # Create the diff parser
         cwd = os.path.dirname(self.window.active_view().file_name())
@@ -67,7 +66,7 @@ class DiffView(sublime_plugin.WindowCommand):
         # Start listening for the quick panel creation, then create it.
         ViewFinder.instance().start_listen(self.quick_panel_found)
         self.window.show_quick_panel(
-            [h.description for h in self.parser.changed_hunks],
+            [h.description() for h in self.parser.changed_hunks],
             self.show_hunk_diff,
             sublime.MONOSPACE_FONT | sublime.KEEP_OPEN_ON_FOCUS_LOST,
             self.last_hunk_index,
