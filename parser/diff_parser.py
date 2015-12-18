@@ -27,7 +27,6 @@ class DiffParser(object):
     def setup_files(self):
         """Create all the files needed to show the diffs."""
         (old_ver, new_ver) = self.vcs_helper.get_file_versions(self.diff_args)
-        print((old_ver, new_ver))
 
         for changed_file in self.changed_files:
             if old_ver == '':
@@ -43,8 +42,6 @@ class DiffParser(object):
 
                 if not os.path.exists(old_dir):
                     os.makedirs(old_dir)
-                print(changed_file.old_file)
-                print(old_dir)
                 with open(changed_file.old_file, 'w') as f:
                     old_file_content = self.vcs_helper.get_file_content(
                         changed_file.filename,

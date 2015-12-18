@@ -200,11 +200,9 @@ class SVNHelper(VCSHelper):
     def svn_command(self, args):
         """Wrapper to run an SVN command."""
         # Using shell, just pass a string to subprocess.
-        print(args)
         p = subprocess.Popen(" ".join(['svn'] + args),
                              stdout=subprocess.PIPE,
                              shell=True,
                              cwd=self.svn_base)
         out, err = p.communicate()
-        print(out.decode('utf-8'))
         return out.decode('utf-8')
