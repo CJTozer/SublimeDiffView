@@ -158,7 +158,16 @@ class SVNHelper(VCSHelper):
     def get_changed_files(self, diff_args):
         files = []
         if not self.got_changed_files:
-            status_text = self.svn_command(['diff', diff_args, '--summarize'])
+            if self.REV_MATCH.match(diff_args):
+                # Can only compare this against HEAD
+                status_text = self.svn_command(
+                    ['diff', diff_args + ":HEAD", '--summarize'])
+            elif self.COMMIT_MATCH.match(diff_args):
+                # Commit match
+                status_text = self.svn_command(
+                    ['diff', diff_args, '--summarize'])
+            else:
+                status_text = self.svn_command(['status', diff_args])
             for line in status_text.split('\n'):
                 match = self.STATUS_CHANGED_FILE.match(line)
                 if match:
