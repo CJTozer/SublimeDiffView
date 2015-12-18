@@ -75,7 +75,9 @@ class HunkDiff(object):
         in_add = False
         in_del = False
 
-        for line in self.hunk_diff_lines:
+        # Add a dummy blank line to catch regions going right to the end of the
+        # hunk.
+        for line in self.hunk_diff_lines + [' ']:
             if in_add and not line.startswith('+'):
                 # ADD region ends.
                 self.new_regions.append(DiffRegion(
@@ -111,21 +113,6 @@ class HunkDiff(object):
                 old_cur_line += 1
             if not line.startswith('-'):
                 new_cur_line += 1
-
-        if in_add:
-            self.new_regions.append(DiffRegion(
-                "ADD",
-                new_add_start,
-                0,
-                new_cur_line,
-                0))
-        if in_del:
-            self.old_regions.append(DiffRegion(
-                "DEL",
-                old_del_start,
-                0,
-                old_cur_line,
-                0))
 
 
     def sort_chunks(self):
