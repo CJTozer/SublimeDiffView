@@ -9,7 +9,7 @@
 
 ## Screenshot
 
-![Screenshot](http://raw.githubusercontent.com/CJTozer/SublimeDiffView/master/img/screen_1.png)
+![Screenshot](https://raw.githubusercontent.com/CJTozer/SublimeDiffView/master/img/screen_1.png)
 
 ## Usage
 * `Alt + Shift + D` to run a diff
