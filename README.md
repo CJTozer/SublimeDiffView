@@ -1,6 +1,16 @@
 # DiffView for Sublime Text 3
 *Git and SVN Diff Viewer for Sublime Text 3*
 
+## Features
+* Side-by-side view with differences highlighted
+* Quick navigation from one change to the next
+* Flexible diffs for both Git and SVN (see below for the full set of options)
+* The most common diff (uncommitted changes) is the quickest to use
+
+## Screenshot
+
+[!Screenshot](/img/screen_1.png?raw=true "Screenshot from Git diff")
+
 ## Usage
 * `Alt + Shift + D` to run a diff
     * *See below for supported diff options*
