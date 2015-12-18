@@ -135,7 +135,6 @@ class DiffView(sublime_plugin.WindowCommand):
             sublime.ENCODED_POSITION |
             sublime.FORCE_GROUP,
             group=0)
-        left_view.set_read_only(True)
         t = threading.Thread(
             target=highlight_when_ready,
             args=(left_view, hunk.file_diff.add_old_regions))
