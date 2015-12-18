@@ -9,7 +9,7 @@
 
 ## Screenshot
 
-[!Screenshot](/img/screen_1.png?raw=true "Screenshot from Git diff")
+![Screenshot](/img/screen_1.png?raw=true "Screenshot from Git diff")
 
 ## Usage
 * `Alt + Shift + D` to run a diff
