@@ -1,5 +1,5 @@
 # SublimeDiffView
-Git Diff Viewer for Sublime Text 3
+Git and SVN Diff Viewer for Sublime Text 3
 
 ## Usage
 * `Alt + Shift + D` to run a diff
