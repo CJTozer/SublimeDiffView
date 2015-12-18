@@ -16,6 +16,11 @@
 ### Git
 * *Default* (when there's no input): comparison of wc against `HEAD` - i.e. show unstaged changes
 * `HEAD` or `branch` or `SHA` or `tag`: compare wc against `HEAD`/`branch`/`SHA`/`tag`
+* `branch..` compare `branch` with wc
+* `..branch` compare wc with `branch`
+* `branch_a..branch_b` compare `branch_a` with `branch_b`
+* `branch...` compare the merge-base of wc and `branch` with wc
+* `branch_a...branch_b` compare the merge-base of `branch_a` and `branch_b` with `branch_b`
 
 ### SVN
 * *Default* (when there's no input): show uncommitted changes
