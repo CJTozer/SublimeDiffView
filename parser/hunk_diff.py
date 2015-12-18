@@ -52,17 +52,22 @@ class HunkDiff(object):
         else:
             self.hunk_type = "MOD"
 
-    def description(self):
         # Create the hunk description that will appear in the quick_panel.
         if self.concise_description:
-            return "{}:{}".format(
+            self.description = "{}:{}".format(
                 self.file_diff.filename,
                 self.new_line_start)
-        else:
-            return [
+        elif self.context:
+            self.description = [
                 "{} : {}".format(self.file_diff.filename, self.new_line_start),
                 self.context,
-                "{} | {}{}".format(self.old_hunk_len + self.new_hunk_len,
+                "{} | {}{}".format(self.add_lines + self.del_lines,
+                                   "+" * self.add_lines,
+                                   "-" * self.del_lines)]
+        else:
+            self.description = [
+                "{} : {}".format(self.file_diff.filename, self.new_line_start),
+                "{} | {}{}".format(self.add_lines + self.del_lines,
                                    "+" * self.add_lines,
                                    "-" * self.del_lines)]
 
