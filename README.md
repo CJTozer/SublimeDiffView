@@ -3,7 +3,7 @@
 
 ## Features
 * Side-by-side view with differences highlighted
-* Quick navigation from one change to the next
+* Quick navigation from one change to the next, or search for diffs in a specific file
 * Flexible diffs for both Git and SVN (see below for the full set of options)
 * The most common diff (uncommitted changes) is the quickest to use
 
