@@ -123,7 +123,6 @@ class HunkDiff(object):
             if not line.startswith('-'):
                 new_cur_line += 1
 
-
     def sort_chunks(self):
         """Sort the sub-chunks in this hunk into those which are interesting
         for ADD regions, and those that are interesting for DEL regions.

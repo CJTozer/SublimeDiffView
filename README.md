@@ -24,3 +24,5 @@
 
 ### SVN
 * *Default* (when there's no input): show uncommitted changes
+* `-r 123` compare revision 123 with the working copy
+* `-c 234` show changes made in commit 234

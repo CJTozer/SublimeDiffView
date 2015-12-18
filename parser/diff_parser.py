@@ -43,6 +43,8 @@ class DiffParser(object):
 
                 if not os.path.exists(old_dir):
                     os.makedirs(old_dir)
+                print(changed_file.old_file)
+                print(old_dir)
                 with open(changed_file.old_file, 'w') as f:
                     old_file_content = self.vcs_helper.get_file_content(
                         changed_file.filename,

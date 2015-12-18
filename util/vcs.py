@@ -113,8 +113,8 @@ class GitHelper(VCSHelper):
         if match:
             merge_base = self.git_command(
                 ['merge_base',
-                match.group(1),
-                match.group(2)])
+                 match.group(1),
+                 match.group(2)])
             return (merge_base, match.group(2))
 
         # Normal diff
@@ -147,6 +147,9 @@ class GitHelper(VCSHelper):
 class SVNHelper(VCSHelper):
 
     STATUS_CHANGED_FILE = re.compile('\s*[AM][\+CMLSKOTB\s]*([\w\.\-\/\\\\]+)')
+    REV_MATCH = re.compile('-r (\d+)')
+    COMMIT_MATCH = re.compile('-c (\d+)')
+    """VCSHelper implementation for SVN repositories."""
 
     def __init__(self, repo_base):
         self.svn_base = repo_base
@@ -155,28 +158,53 @@ class SVNHelper(VCSHelper):
     def get_changed_files(self, diff_args):
         files = []
         if not self.got_changed_files:
-            status_text = self.svn_command(['diff', '--summarize'])
+            status_text = self.svn_command(['diff', diff_args, '--summarize'])
             for line in status_text.split('\n'):
                 match = self.STATUS_CHANGED_FILE.match(line)
                 if match:
                     filename = match.group(1)
                     abs_filename = os.path.join(self.svn_base, filename)
 
-                    # Get the diff text for this file.
-                    diff_text = self.svn_command(['diff', filename])
-                    files.append(FileDiff(filename, abs_filename, diff_text))
+                    # Don't add directories to the list
+                    if not os.path.isdir(abs_filename):
+                        # Get the diff text for this file.
+                        diff_text = self.svn_command(
+                            ['diff', diff_args, filename])
+                        files.append(FileDiff(
+                            filename,
+                            abs_filename,
+                            diff_text))
+
         self.got_changed_files = True
         return files
 
+    def get_file_versions(self, diff_args):
+        # Diff WC against a specific revision?
+        match = self.REV_MATCH.match(diff_args)
+        if match:
+            return (diff_args, '')
+
+        # Diff for a specific commit
+        match = self.COMMIT_MATCH.match(diff_args)
+        if match:
+            new_commit = int(match.group(1))
+            old_commit = new_commit - 1
+            return ('-r {}'.format(old_commit), '-r {}'.format(new_commit))
+
+        # Compare HEAD against WC
+        return ('-r HEAD', '')
+
     def get_file_content(self, filename, version):
-        return self.svn_command(['cat', filename])
+        return self.svn_command(['cat', version, filename])
 
     def svn_command(self, args):
         """Wrapper to run an SVN command."""
         # Using shell, just pass a string to subprocess.
+        print(args)
         p = subprocess.Popen(" ".join(['svn'] + args),
                              stdout=subprocess.PIPE,
                              shell=True,
                              cwd=self.svn_base)
         out, err = p.communicate()
+        print(out.decode('utf-8'))
         return out.decode('utf-8')
