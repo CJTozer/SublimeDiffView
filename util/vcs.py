@@ -147,6 +147,7 @@ class GitHelper(VCSHelper):
 class SVNHelper(VCSHelper):
 
     STATUS_CHANGED_FILE = re.compile('\s*[AM][\+CMLSKOTB\s]*([\w\.\-\/\\\\]+)')
+    DUAL_REV_MATCH = re.compile('-r (\d+):(\d+)')
     REV_MATCH = re.compile('-r (\d+)')
     COMMIT_MATCH = re.compile('-c (\d+)')
     """VCSHelper implementation for SVN repositories."""
@@ -158,7 +159,11 @@ class SVNHelper(VCSHelper):
     def get_changed_files(self, diff_args):
         files = []
         if not self.got_changed_files:
-            if self.REV_MATCH.match(diff_args):
+            if self.DUAL_REV_MATCH.match(diff_args):
+                # Comparison between 2 revisions
+                status_text = self.svn_command(
+                    ['diff', diff_args, '--summarize'])
+            elif self.REV_MATCH.match(diff_args):
                 # Can only compare this against HEAD
                 status_text = self.svn_command(
                     ['diff', diff_args + ":HEAD", '--summarize'])
@@ -189,6 +194,13 @@ class SVNHelper(VCSHelper):
         return files
 
     def get_file_versions(self, diff_args):
+        # Diff between two versions?
+        match = self.DUAL_REV_MATCH.match(diff_args)
+        if match:
+            return (
+                '-r {}'.format(match.group(1)),
+                '-r {}'.format(match.group(2)))
+
         # Diff HEAD against a specific revision?
         match = self.REV_MATCH.match(diff_args)
         if match:
@@ -197,9 +209,9 @@ class SVNHelper(VCSHelper):
         # Diff for a specific commit
         match = self.COMMIT_MATCH.match(diff_args)
         if match:
-            new_commit = int(match.group(1))
-            old_commit = new_commit - 1
-            return ('-r {}'.format(old_commit), '-r {}'.format(new_commit))
+            new_revision = int(match.group(1))
+            old_revision = new_revision - 1
+            return ('-r {}'.format(old_revision), '-r {}'.format(new_revision))
 
         # Compare HEAD against WC
         return ('-r HEAD', '')
