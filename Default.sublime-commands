@@ -1,10 +1,14 @@
 [
     {
-        "caption": "Diff View: Compare working copy with...",
+        "caption": "Diff View: Run custom diff...",
         "command": "diff_view"
     },
     {
-        "caption": "Diff View: List changes from last diff",
+        "caption": "Diff View: Show uncommitted changes",
+        "command": "diff_view_uncommitted"
+    },
+    {
+        "caption": "Diff View: Review last diff",
         "command": "diff_hunks_list"
     }
 ]

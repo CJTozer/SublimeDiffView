@@ -20,14 +20,15 @@
 3. Enter `DiffView`
 
 ## Usage
+* See options under "DiffView" in the Command Palette, and also the following keyboard shortcuts
 * `Alt + Shift + D` to run a diff
     * *See below for supported diff options*
-    * This lists all the changed hunks, and shows you a preview as you move down the list
-    * You can search for a particular file in the list of hunks, which will filter the results
-    * Hit `Enter` to jump to the currently selected diff
-    * hit `Esc` to cancel the Diff View, and return to where you were
+    * This lists all the changes, and shows you a preview as you move down the list
+    * You can search for a particular file in the list of changes, which will filter the results
+    * Hit `Enter` to jump to the currently selected change
+    * hit `Esc` to cancel the DiffView, and return to where you were
 * `Alt + D` to review the last diff
-    * This will show the list of hunks from the last diff, starting from the last hunk you selected
+    * This will show the list of changes from the last diff, starting from the last change you previewed
 
 ## Supported Diff Options
 

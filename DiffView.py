@@ -17,9 +17,13 @@ class DiffView(sublime_plugin.WindowCommand):
     Asks for input for what to diff against; a Git SHA/branch/tag.
     """
 
-    def run(self):
+    def _prepare(self):
+        """Some preparation common to all subclasses."""
         self.window.last_diff = self
         self.last_hunk_index = 0
+
+    def run(self):
+        self._prepare()
 
         # Use show_input_panel as show_quick_panel doesn't allow arbitrary data
         self.window.show_input_panel(
@@ -30,10 +34,10 @@ class DiffView(sublime_plugin.WindowCommand):
             None)
 
     def do_diff(self, diff_args):
-        """Compare the current codebase with the `diff_args`.
+        """Run a diff and display the changes.
 
         Args:
-            diff_args: the base SHA/tag/branch to compare against.
+            diff_args: the arguments to the diff.
         """
         self.diff_args = diff_args
 
@@ -160,3 +164,9 @@ class DiffHunksList(sublime_plugin.WindowCommand):
     def run(self):
         if hasattr(self.window, 'last_diff'):
             self.window.last_diff.list_changed_hunks()
+
+class DiffViewUncommitted(DiffView):
+    """Command to display a simple diff of uncommitted changes."""
+    def run(self):
+        self._prepare()
+        self.do_diff('')
