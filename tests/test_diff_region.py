@@ -2,6 +2,11 @@ import sys
 import sublime
 from unittest import TestCase
 
+print("===MODULES============")
+print("======================")
+print("\n".join(sys.modules))
+print("======================")
+
 if sublime.version() < '3000':
     diff_region = sys.modules["diff_region"]
 else:
