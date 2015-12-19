@@ -167,6 +167,7 @@ class SVNHelper(VCSHelper):
                 status_text = self.svn_command(
                     ['diff', diff_args, '--summarize'])
             else:
+                # Show uncommitted changes
                 status_text = self.svn_command(['status', diff_args])
             for line in status_text.split('\n'):
                 match = self.STATUS_CHANGED_FILE.match(line)
@@ -188,10 +189,10 @@ class SVNHelper(VCSHelper):
         return files
 
     def get_file_versions(self, diff_args):
-        # Diff WC against a specific revision?
+        # Diff HEAD against a specific revision?
         match = self.REV_MATCH.match(diff_args)
         if match:
-            return (diff_args, '')
+            return (diff_args, '-r HEAD')
 
         # Diff for a specific commit
         match = self.COMMIT_MATCH.match(diff_args)
