@@ -13,9 +13,11 @@
 
 ![Screenshot](https://raw.githubusercontent.com/CJTozer/SublimeDiffView/master/img/screen_1.png "Screenshot from Git diff")
 
-## Feedback
+## Installation
 
-This plugin is still in active development.  If you have any issues, comments, or feature suggestions, please raise them [on GitHub](https://github.com/CJTozer/SublimeDiffView/issues).  All feedback gratefully received.
+1. Install the Sublime Text [Package Control](https://packagecontrol.io/installation) plugin if you don't have it already
+2. Open the command palette and start typing `Package Control: Install Package`
+3. Enter `DiffView`
 
 ## Usage
 * `Alt + Shift + D` to run a diff
@@ -52,3 +54,7 @@ This plugin is still in active development.  If you have any issues, comments, o
     * compare revision 123 with revision 234
 * `-c 234`
     * show changes made in commit 234
+
+## Feedback
+
+This plugin is still in active development.  If you have any issues, comments, or feature suggestions, please raise them [on GitHub](https://github.com/CJTozer/SublimeDiffView/issues).  All feedback gratefully received.
