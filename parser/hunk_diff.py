@@ -123,53 +123,6 @@ class HunkDiff(object):
             if not line.startswith('-'):
                 new_cur_line += 1
 
-    def sort_chunks(self):
-        """Sort the sub-chunks in this hunk into those which are interesting
-        for ADD regions, and those that are interesting for DEL regions.
-
-        Returns:
-            (add_chunks, del_chunks)
-        """
-        add_chunks = []
-        del_chunks = []
-        cur_chunk = []
-        cur_chunk_has_del = False
-        cur_chunk_has_add = False
-        need_newline = False
-
-        # ADD chunks
-        for line in self.hunk_diff_lines:
-            if line.startswith('~'):
-                if need_newline or not cur_chunk_has_del:
-                    add_chunks.append(cur_chunk)
-                    cur_chunk = []
-                    cur_chunk_has_del = False
-                    need_newline = False
-            elif line.startswith('-'):
-                cur_chunk_has_del = True
-            else:
-                cur_chunk.append(line)
-                if line.startswith('+'):
-                    need_newline = True
-
-        # DEL chunks
-        cur_chunk = []
-        for line in self.hunk_diff_lines:
-            if line.startswith('~'):
-                if need_newline or not cur_chunk_has_add:
-                    del_chunks.append(cur_chunk)
-                    cur_chunk = []
-                    cur_chunk_has_add = False
-                    need_newline = False
-            elif line.startswith('+'):
-                cur_chunk_has_add = True
-            else:
-                cur_chunk.append(line)
-                if line.startswith('-'):
-                    need_newline = True
-
-        return (add_chunks, del_chunks)
-
     def filespecs(self):
         """Get the portion of code that this hunk refers to in the format
         `(old_filename:old_line, new_filename:new_line)`.
