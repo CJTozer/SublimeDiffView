@@ -12,6 +12,10 @@
 
 ![Screenshot](https://raw.githubusercontent.com/CJTozer/SublimeDiffView/master/img/screen_1.png "Screenshot from Git diff")
 
+## Feedback
+
+This plugin is still in active development.  If you have any issues, comments, or feature suggestions, please raise them [on GitHub](https://github.com/CJTozer/SublimeDiffView/issues).  All feedback gratefully received.
+
 ## Usage
 * `Alt + Shift + D` to run a diff
     * *See below for supported diff options*
