@@ -1,5 +1,6 @@
 # DiffView for Sublime Text 3
 *Git and SVN Diff Viewer for Sublime Text 3*
+[![Build Status](https://travis-ci.org/CJTozer/SublimeDiffView.svg)](https://travis-ci.org/CJTozer/SublimeDiffView)
 
 ## Features
 * Side-by-side view with differences highlighted
