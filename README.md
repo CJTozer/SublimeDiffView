@@ -54,6 +54,8 @@
     * compare revision 123 with revision 234
 * `-c 234`
     * show changes made in commit 234
+* `--cl issue1234`
+    * show uncommitted changes on changelist `issue1234`
 
 ## Feedback
 
