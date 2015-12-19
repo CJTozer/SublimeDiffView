@@ -1,8 +1,13 @@
 import sys
+import sublime
 from unittest import TestCase
 
-diffview = sys.modules["DiffView"]
-DiffRegion = diffview.parser.diff_region.DiffRegion
+if sublime.version() < '3000':
+    parser = sys.modules["parser"]
+else:
+    parser = sys.modules["DiffView.parser"]
+
+DiffRegion = parser.diff_region.DiffRegion
 
 class test_DiffRegion(TestCase):
 
