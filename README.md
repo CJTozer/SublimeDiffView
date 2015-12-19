@@ -5,6 +5,7 @@
 ## Features
 * Side-by-side view with differences highlighted
 * Quick navigation from one change to the next, or search for diffs in a specific file
+* Auto-detects the repository to use from the current active file
 * Flexible diffs for both Git and SVN (see below for the full set of options)
 * The most common diff (uncommitted changes) is the quickest to use
 
@@ -47,5 +48,7 @@ This plugin is still in active development.  If you have any issues, comments, o
 * *Default* (when there's no input): show uncommitted changes
 * `-r 123`
     * compare revision 123 with the latest revision (not the working copy)
+* `-r 123:234`
+    * compare revision 123 with revision 234
 * `-c 234`
     * show changes made in commit 234
