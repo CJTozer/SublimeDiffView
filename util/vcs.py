@@ -147,9 +147,9 @@ class GitHelper(VCSHelper):
 class SVNHelper(VCSHelper):
 
     STATUS_CHANGED_FILE = re.compile('\s*[AM][\+CMLSKOTB\s]*([\w\.\-\/\\\\]+)')
-    DUAL_REV_MATCH = re.compile('-r (\d+):(\d+)')
-    REV_MATCH = re.compile('-r (\d+)')
-    COMMIT_MATCH = re.compile('-c (\d+)')
+    DUAL_REV_MATCH = re.compile('-r *(\d+):(\d+)')
+    REV_MATCH = re.compile('-r *(\d+)')
+    COMMIT_MATCH = re.compile('-c *(\d+)')
     """VCSHelper implementation for SVN repositories."""
 
     def __init__(self, repo_base):
@@ -204,7 +204,7 @@ class SVNHelper(VCSHelper):
         # Diff HEAD against a specific revision?
         match = self.REV_MATCH.match(diff_args)
         if match:
-            return (diff_args, '-r HEAD')
+            return ('-r {}'.format(match.group(1)), '-r HEAD')
 
         # Diff for a specific commit
         match = self.COMMIT_MATCH.match(diff_args)
