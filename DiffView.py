@@ -22,6 +22,30 @@ class DiffView(sublime_plugin.WindowCommand):
         self.window.last_diff = self
         self.last_hunk_index = 0
 
+        # Set up the groups
+        self.quick_panel = True
+        if self.quick_panel:
+            self.diff_layout = {
+                "cols": [0.0, 0.5, 1.0],
+                "rows": [0.0, 1.0],
+                "cells": [
+                    [0, 0, 1, 1],
+                    [1, 0, 2, 1]]}
+            self.diff_list_group = None
+            self.lhs_group = 0
+            self.rhs_group = 1
+        else:
+            self.diff_layout = {
+                "cols": [0.0, 0.5, 1.0],
+                "rows": [0.0, 0.25, 1.0],
+                "cells": [
+                    [0, 0, 2, 1],
+                    [0, 1, 1, 2],
+                    [1, 1, 2, 2]]}
+            self.diff_list_group = 0
+            self.lhs_group = 1
+            self.rhs_group = 2
+
     def run(self):
         self._prepare()
 
@@ -61,10 +85,7 @@ class DiffView(sublime_plugin.WindowCommand):
 
         # Store old layout, then set layout to 2 columns.
         self.orig_layout = self.window.layout()
-        self.window.set_layout(
-            {"cols": [0.0, 0.5, 1.0],
-             "rows": [0.0, 1.0],
-             "cells": [[0, 0, 1, 1], [1, 0, 2, 1]]})
+        self.window.set_layout(self.diff_layout)
 
         # Start listening for the quick panel creation, then create it.
         ViewFinder.instance().start_listen(self.quick_panel_found)
@@ -126,7 +147,7 @@ class DiffView(sublime_plugin.WindowCommand):
             flags=sublime.TRANSIENT |
             sublime.ENCODED_POSITION |
             sublime.FORCE_GROUP,
-            group=1)
+            group=self.rhs_group)
         t = threading.Thread(
             target=highlight_when_ready,
             args=(right_view, hunk.file_diff.add_new_regions))
@@ -137,7 +158,7 @@ class DiffView(sublime_plugin.WindowCommand):
             flags=sublime.TRANSIENT |
             sublime.ENCODED_POSITION |
             sublime.FORCE_GROUP,
-            group=0)
+            group=self.lhs_group)
         t = threading.Thread(
             target=highlight_when_ready,
             args=(left_view, hunk.file_diff.add_old_regions))
