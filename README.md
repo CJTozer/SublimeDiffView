@@ -71,10 +71,12 @@
 There are 2 different view styles supported - "Quick Panel" and "Persistent List".  You can see them in action in the screenshots above.  Try them both and pick a favourite!
 
 ```json
+{
     // The style for viewing the diff.  Options are:
     // - "quick_panel"
     // - "persistent_list"
     "view_style": "persistent_list"
+}
 ```
 
 ## Feedback
