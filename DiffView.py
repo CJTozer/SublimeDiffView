@@ -3,6 +3,7 @@ import sublime_plugin
 import os
 import threading
 import time
+import tempfile
 
 from .util.view_finder import ViewFinder
 from .util.constants import Constants
@@ -23,7 +24,9 @@ class DiffView(sublime_plugin.WindowCommand):
         self.last_hunk_index = 0
 
         # Set up the groups
-        self.quick_panel = True
+        # TODO - get from settings, default is quick panel
+        self.quick_panel = False
+        self.list_group = 0
         if self.quick_panel:
             self.diff_layout = {
                 "cols": [0.0, 0.5, 1.0],
@@ -87,14 +90,44 @@ class DiffView(sublime_plugin.WindowCommand):
         self.orig_layout = self.window.layout()
         self.window.set_layout(self.diff_layout)
 
-        # Start listening for the quick panel creation, then create it.
-        ViewFinder.instance().start_listen(self.quick_panel_found)
-        self.window.show_quick_panel(
-            [h.description for h in self.parser.changed_hunks],
-            self.show_hunk_diff,
-            sublime.MONOSPACE_FONT | sublime.KEEP_OPEN_ON_FOCUS_LOST,
-            self.last_hunk_index,
-            self.preview_hunk)
+        if self.quick_panel:
+            # Start listening for the quick panel creation, then create it.
+            ViewFinder.instance().start_listen(self.quick_panel_found)
+            self.window.show_quick_panel(
+                [h.description for h in self.parser.changed_hunks],
+                self.show_hunk_diff,
+                sublime.MONOSPACE_FONT | sublime.KEEP_OPEN_ON_FOCUS_LOST,
+                self.last_hunk_index,
+                self.preview_hunk)
+        else:
+            # Put the hunks list in the top panel
+            self.changes_list_file = tempfile.mkstemp()[1]
+            self.changes_list_view = self.window.open_file(
+                self.changes_list_file,
+                flags=sublime.TRANSIENT |
+                sublime.FORCE_GROUP,
+                group=self.list_group)
+
+            def show_diff_list_when_ready(view):
+                while view.is_loading():
+                    time.sleep(0.1)
+                view.parser = self.parser
+                changes_list = "\n".join(
+                    [h.oneline_description for h in self.parser.changed_hunks])
+                view.run_command(
+                    "show_diff_list",
+                    args={'changes_list': changes_list})
+                view.set_read_only(True)
+
+                # Listen for changes to this view's selection.
+                ChangeListSelectionListner.instance().start_listen(
+                    self.preview_hunk,
+                    view)
+
+            t = threading.Thread(
+                target=show_diff_list_when_ready,
+                args=(self.changes_list_view,))
+            t.start()
 
     def show_hunk_diff(self, hunk_index):
         """Open the location of the selected hunk.
@@ -104,6 +137,7 @@ class DiffView(sublime_plugin.WindowCommand):
         Args:
             hunk_index: the selected index in the changed hunks list.
         """
+        print(hunk_index)
         # Remove diff highlighting from all views.
         for view in self.window.views():
             view.erase_regions(Constants.ADD_REGION_KEY)
@@ -191,3 +225,47 @@ class DiffViewUncommitted(DiffView):
     def run(self):
         self._prepare()
         self.do_diff('')
+
+class ShowDiffListCommand(sublime_plugin.TextCommand):
+    """Command to show the diff list."""
+    def run(self, edit, changes_list):
+        self.view.set_scratch(True)
+        self.view.insert(edit, 0, changes_list)
+        # Move cursor to top
+        self.view.sel().clear()
+        self.view.sel().add(sublime.Region(0, 0))
+        self.view.set_viewport_position(
+            (0, 0),
+            animate=False)
+
+class ChangeListSelectionListner(sublime_plugin.EventListener):
+    _instance = None
+
+    def __init__(self):
+        self.__class__._instance = self
+        self._listening = False
+
+    """Helper class for spotting selection changes in the changes list."""
+    def on_selection_modified_async(self, view):
+        if self._listening and view == self.view:
+            current_selection = view.sel()[0]
+            (current_row, _) = view.rowcol(current_selection.a)
+            # rowcol is zero indexed, so line 1 gives index zero - perfect
+            self.cb(current_row)
+
+    @classmethod
+    def instance(cls):
+        if cls._instance:
+            return cls._instance
+        else:
+            return cls()
+
+    def start_listen(self, cb, view):
+        """Start listening for the changes list.
+
+        Args:
+            cb: The callback to call when a widget is created.
+            view: The view to listen for."""
+        self.cb = cb
+        self.view = view
+        self._listening = True
