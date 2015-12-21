@@ -10,6 +10,18 @@ from .util.constants import Constants
 from .parser.diff_parser import DiffParser
 
 
+# Triple view TODOs:
+# - setting to govern the view
+# - go to diff on enter
+# - return to normal on escape
+# - UI:
+#   - user settings for the one line description?
+#   - colors for "+" and "-" in the list?
+#   - remove caret from list view
+#   - clearer line highlighting in list view?
+# - List selection listener stops listening when the list view is closed
+#   (could also just be triggered off 'enter' or 'esc' too)
+
 class DiffView(sublime_plugin.WindowCommand):
 
     diff_args = ''
