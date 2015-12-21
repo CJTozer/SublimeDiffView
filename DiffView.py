@@ -12,15 +12,6 @@ from .parser.diff_parser import DiffParser
 
 # Triple view TODOs:
 # - setting to govern the view
-# - go to diff on enter
-# - return to normal on escape
-# - UI:
-#   - user settings for the one line description?
-#   - colors for "+" and "-" in the list?
-#   - remove caret from list view
-#   - clearer line highlighting in list view?
-# - List selection listener stops listening when the list view is closed
-#   (could also just be triggered off 'enter' or 'esc' too)
 
 class DiffView(sublime_plugin.WindowCommand):
 
@@ -37,7 +28,7 @@ class DiffView(sublime_plugin.WindowCommand):
 
         # Set up the groups
         # TODO - get from settings, default is quick panel
-        self.use_quick_panel = True
+        self.use_quick_panel = False
         self.list_group = 0
         if self.use_quick_panel:
             self.diff_layout = {
@@ -113,7 +104,7 @@ class DiffView(sublime_plugin.WindowCommand):
                 self.preview_hunk)
         else:
             # Put the hunks list in the top panel
-            self.changes_list_file = tempfile.mkstemp(suffix='.diffview_changelist')[1]
+            self.changes_list_file = tempfile.mkstemp()[1]
             self.changes_list_view = self.window.open_file(
                 self.changes_list_file,
                 flags=sublime.TRANSIENT |
@@ -128,7 +119,8 @@ class DiffView(sublime_plugin.WindowCommand):
                     [h.oneline_description for h in self.parser.changed_hunks])
                 view.run_command(
                     "show_diff_list",
-                    args={'changes_list': changes_list})
+                    args={'changes_list': changes_list,
+                    'line': self.last_hunk_index})
                 view.set_read_only(True)
 
                 # Listen for changes to this view's selection.
@@ -150,7 +142,6 @@ class DiffView(sublime_plugin.WindowCommand):
         Args:
             hunk_index: the selected index in the changed hunks list.
         """
-        print(hunk_index)
         # Remove diff highlighting from all views.
         for view in self.window.views():
             view.erase_regions(Constants.ADD_REGION_KEY)
@@ -251,9 +242,15 @@ class DiffHunksList(sublime_plugin.WindowCommand):
 class DiffCancel(sublime_plugin.WindowCommand):
     """Cancel the diff."""
     def run(self):
-        print("Running diff_cancel")
         if hasattr(self.window, 'last_diff'):
             self.window.last_diff.reset_window()
+
+class DiffShowSelected(sublime_plugin.WindowCommand):
+    """Show the change that's curently selected by this view."""
+    def run(self):
+        if hasattr(self.window, 'last_diff'):
+            self.window.last_diff.show_hunk_diff(
+                DiffViewEventListner.instance().current_row)
 
 class DiffViewUncommitted(DiffView):
     """Command to display a simple diff of uncommitted changes."""
@@ -262,13 +259,19 @@ class DiffViewUncommitted(DiffView):
         self.do_diff('')
 
 class ShowDiffListCommand(sublime_plugin.TextCommand):
-    """Command to show the diff list."""
-    def run(self, edit, changes_list):
+    """Command to show the diff list.
+
+    Args:
+        changes_list: The text of the changes list.
+        line: The selected line (zero indexed).
+    """
+    def run(self, edit, changes_list, line):
         self.view.set_scratch(True)
         self.view.insert(edit, 0, changes_list)
         # Move cursor to top
         self.view.sel().clear()
-        self.view.sel().add(sublime.Region(0, 0))
+        pos = self.view.text_point(line, 0)
+        self.view.sel().add(sublime.Region(pos, pos))
         self.view.set_viewport_position(
             (0, 0),
             animate=False)
@@ -280,18 +283,31 @@ class DiffViewEventListner(sublime_plugin.EventListener):
     def __init__(self):
         self.__class__._instance = self
         self._listening = False
+        self.current_row = -1
 
     def on_selection_modified_async(self, view):
-        """@@@"""
+        """Called when a selection has been modified.
+
+        Only interested if this is the change list view.
+        """
         if self._listening and view == self.view:
             current_selection = view.sel()[0]
-            (current_row, _) = view.rowcol(current_selection.a)
+            (self.current_row, _) = view.rowcol(current_selection.a)
             # rowcol is zero indexed, so line 1 gives index zero - perfect
-            self.diff.preview_hunk(current_row)
+            self.diff.preview_hunk(self.current_row)
 
     def on_query_context(self, view, key, operator, operand, match_all):
+        """Context queries mean someone is trying to work out whether to
+        override key bindings.
+
+        The bindings that are overridden are as follows:
+        - escape -> "cancel_diff" when a diff is running
+        - enter -> "show_hunk" when in the changes list view
+        """
         if key == "diff_running":
             return self._listening
+        elif key == "diff_changes_list":
+            return self._listening and view == self.view
         return None
 
     @classmethod
@@ -315,4 +331,5 @@ class DiffViewEventListner(sublime_plugin.EventListener):
         self._listening = True
 
     def stop(self):
+        """Stop listening."""
         self._listening = False

@@ -14,4 +14,11 @@
             { "key": "diff_running" }
         ]
     },
+    {
+        "command": "diff_show_selected",
+        "keys": ["enter"],
+        "context": [
+            { "key": "diff_changes_list" }
+        ]
+    },
 ]
