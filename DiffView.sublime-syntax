@@ -1,0 +1,6 @@
+%YAML 1.2
+---
+name: DiffView Changes List
+file_extensions: [diffview_changelist]
+scope: diffview.changes_list
+hidden: True

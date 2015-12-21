@@ -37,9 +37,9 @@ class DiffView(sublime_plugin.WindowCommand):
 
         # Set up the groups
         # TODO - get from settings, default is quick panel
-        self.quick_panel = False
+        self.use_quick_panel = True
         self.list_group = 0
-        if self.quick_panel:
+        if self.use_quick_panel:
             self.diff_layout = {
                 "cols": [0.0, 0.5, 1.0],
                 "rows": [0.0, 1.0],
@@ -102,7 +102,7 @@ class DiffView(sublime_plugin.WindowCommand):
         self.orig_layout = self.window.layout()
         self.window.set_layout(self.diff_layout)
 
-        if self.quick_panel:
+        if self.use_quick_panel:
             # Start listening for the quick panel creation, then create it.
             ViewFinder.instance().start_listen(self.quick_panel_found)
             self.window.show_quick_panel(
@@ -113,7 +113,7 @@ class DiffView(sublime_plugin.WindowCommand):
                 self.preview_hunk)
         else:
             # Put the hunks list in the top panel
-            self.changes_list_file = tempfile.mkstemp()[1]
+            self.changes_list_file = tempfile.mkstemp(suffix='.diffview_changelist')[1]
             self.changes_list_view = self.window.open_file(
                 self.changes_list_file,
                 flags=sublime.TRANSIENT |
@@ -132,9 +132,10 @@ class DiffView(sublime_plugin.WindowCommand):
                 view.set_read_only(True)
 
                 # Listen for changes to this view's selection.
-                ChangeListSelectionListner.instance().start_listen(
+                DiffViewEventListner.instance().start_listen(
                     self.preview_hunk,
-                    view)
+                    view,
+                    self)
 
             t = threading.Thread(
                 target=show_diff_list_when_ready,
@@ -156,18 +157,14 @@ class DiffView(sublime_plugin.WindowCommand):
             view.erase_regions(Constants.MOD_REGION_KEY)
             view.erase_regions(Constants.DEL_REGION_KEY)
 
+        if hunk_index == -1:
+            self.reset_window()
+            return
+
         # Reset the layout.
         self.window.set_layout(self.orig_layout)
-
-        if hunk_index == -1:
-            # Return to the original view/selection
-            self.window.focus_view(self.orig_view)
-            self.orig_view.sel().clear()
-            self.orig_view.sel().add(self.orig_pos)
-            self.orig_view.set_viewport_position(
-                self.orig_viewport,
-                animate=False)
-            return
+        if not self.use_quick_panel:
+            self.changes_list_view.close()
 
         self.last_hunk_index = hunk_index
         hunk = self.parser.changed_hunks[hunk_index]
@@ -210,9 +207,28 @@ class DiffView(sublime_plugin.WindowCommand):
             args=(left_view, hunk.file_diff.add_old_regions))
         t.start()
 
-        # Keep the focus in the quick panel
         self.window.focus_group(0)
-        self.window.focus_view(self.qpanel)
+        if self.use_quick_panel:
+            # Keep the focus in the quick panel
+            self.window.focus_view(self.qpanel)
+
+    def reset_window(self):
+        """Reset the window to its original state."""
+        # Return to the original layout/view/selection
+        if not self.use_quick_panel:
+            self.changes_list_view.close()
+        self.window.set_layout(self.orig_layout)
+        self.window.focus_view(self.orig_view)
+        self.orig_view.sel().clear()
+        self.orig_view.sel().add(self.orig_pos)
+        self.orig_view.set_viewport_position(
+            self.orig_viewport,
+            animate=False)
+
+        # Stop listening for events
+        ViewFinder.instance().stop()
+        DiffViewEventListner.instance().stop()
+        self.qpanel = None
 
     def quick_panel_found(self, view):
         """Callback to store the quick panel when found.
@@ -232,6 +248,13 @@ class DiffHunksList(sublime_plugin.WindowCommand):
         if hasattr(self.window, 'last_diff'):
             self.window.last_diff.list_changed_hunks()
 
+class DiffCancel(sublime_plugin.WindowCommand):
+    """Cancel the diff."""
+    def run(self):
+        print("Running diff_cancel")
+        if hasattr(self.window, 'last_diff'):
+            self.window.last_diff.reset_window()
+
 class DiffViewUncommitted(DiffView):
     """Command to display a simple diff of uncommitted changes."""
     def run(self):
@@ -250,20 +273,26 @@ class ShowDiffListCommand(sublime_plugin.TextCommand):
             (0, 0),
             animate=False)
 
-class ChangeListSelectionListner(sublime_plugin.EventListener):
+class DiffViewEventListner(sublime_plugin.EventListener):
     _instance = None
 
+    """Helper class for catching events during a diff."""
     def __init__(self):
         self.__class__._instance = self
         self._listening = False
 
-    """Helper class for spotting selection changes in the changes list."""
     def on_selection_modified_async(self, view):
+        """@@@"""
         if self._listening and view == self.view:
             current_selection = view.sel()[0]
             (current_row, _) = view.rowcol(current_selection.a)
             # rowcol is zero indexed, so line 1 gives index zero - perfect
-            self.cb(current_row)
+            self.diff.preview_hunk(current_row)
+
+    def on_query_context(self, view, key, operator, operand, match_all):
+        if key == "diff_running":
+            return self._listening
+        return None
 
     @classmethod
     def instance(cls):
@@ -272,12 +301,18 @@ class ChangeListSelectionListner(sublime_plugin.EventListener):
         else:
             return cls()
 
-    def start_listen(self, cb, view):
+    def start_listen(self, cb, view, diff):
         """Start listening for the changes list.
 
         Args:
             cb: The callback to call when a widget is created.
-            view: The view to listen for."""
+            view: The view to listen for.
+            diff: The diff currently being run.
+        """
         self.cb = cb
         self.view = view
+        self.diff = diff
         self._listening = True
+
+    def stop(self):
+        self._listening = False

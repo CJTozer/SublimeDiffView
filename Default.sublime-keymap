@@ -6,5 +6,12 @@
     {
         "command": "diff_hunks_list",
         "keys": ["alt+d"]
-    }
+    },
+    {
+        "command": "diff_cancel",
+        "keys": ["escape"],
+        "context": [
+            { "key": "diff_running" }
+        ]
+    },
 ]
