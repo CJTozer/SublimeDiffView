@@ -10,9 +10,6 @@ from .util.constants import Constants
 from .parser.diff_parser import DiffParser
 
 
-# Triple view TODOs:
-# - setting to govern the view
-
 class DiffView(sublime_plugin.WindowCommand):
 
     diff_args = ''
@@ -25,12 +22,12 @@ class DiffView(sublime_plugin.WindowCommand):
         """Some preparation common to all subclasses."""
         self.window.last_diff = self
         self.last_hunk_index = 0
+        self.settings = sublime.load_settings('DiffView.sublime-settings')
+        self.view_style = self.settings.get("view_style", "quick_panel")
 
         # Set up the groups
-        # TODO - get from settings, default is quick panel
-        self.use_quick_panel = False
         self.list_group = 0
-        if self.use_quick_panel:
+        if self.view_style == "quick_panel":
             self.diff_layout = {
                 "cols": [0.0, 0.5, 1.0],
                 "rows": [0.0, 1.0],
@@ -40,7 +37,7 @@ class DiffView(sublime_plugin.WindowCommand):
             self.diff_list_group = None
             self.lhs_group = 0
             self.rhs_group = 1
-        else:
+        elif self.view_style == "persistent_list":
             self.diff_layout = {
                 "cols": [0.0, 0.5, 1.0],
                 "rows": [0.0, 0.25, 1.0],
@@ -51,6 +48,12 @@ class DiffView(sublime_plugin.WindowCommand):
             self.diff_list_group = 0
             self.lhs_group = 1
             self.rhs_group = 2
+        else:
+            sublime.error_message(
+                "Invalid value '{}'' for 'view_style'".format(
+                    self.view_style))
+            raise ValueError("Invalid 'view_style': '{}'".format(
+                self.view_style))
 
     def run(self):
         self._prepare()
@@ -93,7 +96,7 @@ class DiffView(sublime_plugin.WindowCommand):
         self.orig_layout = self.window.layout()
         self.window.set_layout(self.diff_layout)
 
-        if self.use_quick_panel:
+        if self.view_style == "quick_panel":
             # Start listening for the quick panel creation, then create it.
             ViewFinder.instance().start_listen(self.quick_panel_found)
             self.window.show_quick_panel(
@@ -154,7 +157,7 @@ class DiffView(sublime_plugin.WindowCommand):
 
         # Reset the layout.
         self.window.set_layout(self.orig_layout)
-        if not self.use_quick_panel:
+        if self.view_style == "persistent_list":
             self.changes_list_view.close()
 
         self.last_hunk_index = hunk_index
@@ -199,14 +202,14 @@ class DiffView(sublime_plugin.WindowCommand):
         t.start()
 
         self.window.focus_group(0)
-        if self.use_quick_panel:
+        if self.view_style == "quick_panel":
             # Keep the focus in the quick panel
             self.window.focus_view(self.qpanel)
 
     def reset_window(self):
         """Reset the window to its original state."""
         # Return to the original layout/view/selection
-        if not self.use_quick_panel:
+        if self.view_style == "persistent_list":
             self.changes_list_view.close()
         self.window.set_layout(self.orig_layout)
         self.window.focus_view(self.orig_view)
