@@ -32,3 +32,7 @@ class ViewFinder(sublime_plugin.EventListener):
             cb: The callback to call when a widget is created."""
         self.cb = cb
         self._listening = True
+
+    def stop(self):
+        """Stop listening."""
+        self._listening = False

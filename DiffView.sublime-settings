@@ -1,0 +1,6 @@
+{
+    // The style for viewing the diff.  Options are:
+    // - "quick_panel"
+    // - "persistent_list"
+    "view_style": "quick_panel"
+}

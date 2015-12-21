@@ -9,9 +9,15 @@
 * Flexible diffs for both Git and SVN (see below for the full set of options)
 * The most common diff (uncommitted changes) is the quickest to use
 
-## Screenshot
+## Screenshots
 
-![Screenshot](https://raw.githubusercontent.com/CJTozer/SublimeDiffView/master/img/screen_1.png "Screenshot from Git diff")
+### With 'Quick Panel' view style
+
+![Screenshot](https://raw.githubusercontent.com/CJTozer/SublimeDiffView/master/img/screen_1.png "Git diff with quick panel")
+
+### With 'Persistent List' view style
+
+![Screenshot](https://raw.githubusercontent.com/CJTozer/SublimeDiffView/master/img/screen_2.png "Git diff with persistent list")
 
 ## Installation
 
@@ -57,6 +63,21 @@
     * show changes made in commit 234
 * `--cl issue1234`
     * show uncommitted changes on changelist `issue1234`
+
+## Configuration Options
+
+### View Style
+
+There are 2 different view styles supported - "Quick Panel" and "Persistent List".  You can see them in action in the screenshots above.  Try them both and pick a favourite!
+
+```
+{
+    // The style for viewing the diff.  Options are:
+    // - "quick_panel"
+    // - "persistent_list"
+    "view_style": "persistent_list"
+}
+```
 
 ## Feedback
 
