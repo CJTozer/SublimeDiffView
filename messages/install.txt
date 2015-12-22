@@ -7,9 +7,15 @@
 
 Welcome to DiffView, a Git and SVN diff viewer for Sublime Text 3.
 
-Thanks for installing!  A couple of hints to get you started:
-- The default key to run a diff is `Alt + Shift + D`.  Run this command from any Git or SVN managed file that has local modifications to start using DiffView.
-- When viewing the diff, press `Enter` to jump to the selected change.  `Alt + D` will drop you back into the diff at the change where you left off.
+Thanks for installing!
+
+
+*** Quick Start Guide ***
+
+A few hints to get you started:
+- The default key to run a diff is `Alt + Shift + D`.
+    - To try out DiffView, run this command from any Git or SVN managed file that has local modifications, and then leave the "diff arguments" blank (just hit `Enter`).  This will show a diff of the uncommitted changes.
+- When viewing a diff, press `Enter` to jump to the selected change.  After this, if you want to go back and see more of the same diff, `Alt + D` will drop you back in to the diff view at the point where you left off.
 - To cancel a diff, press `Escape` - this will take you back to the last point you were editing before DiffView was started.
 
 
