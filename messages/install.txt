@@ -5,19 +5,19 @@
  |____/|_|_| |_|    \_/  |_|\___| \_/\_/  
 
 
-Welcome to DiffView, a VCS diff viewer for Sublime Text 3.
+Welcome to DiffView, a Git and SVN diff viewer for Sublime Text 3.
 
 Thanks for installing!  A couple of hints to get you started:
-- The default key to run a diff is `Alt + Shift + D`.  Run this from any Git or SVN managed file that has local modifications to start using DiffView.
-- From the diff view, press `Enter` to jump to the selected change.  `Alt + D` will drop you back into the same diff where you left off.
-- To cancel a diff, press `Escape` - this will take you back to the last point you were editing.
+- The default key to run a diff is `Alt + Shift + D`.  Run this command from any Git or SVN managed file that has local modifications to start using DiffView.
+- When viewing the diff, press `Enter` to jump to the selected change.  `Alt + D` will drop you back into the diff at the change where you left off.
+- To cancel a diff, press `Escape` - this will take you back to the last point you were editing before DiffView was started.
 
 
 *** Features ***
 
 A quick run-down of the key features:
 - Git and SVN support
-- Flexible diff options
+- Flexible diff options (see https://github.com/CJTozer/SublimeDiffView#supported-diff-options)
 - Two different diff view modes (see https://github.com/CJTozer/SublimeDiffView#view-style)
 
 For complete documentation please see:
@@ -27,6 +27,6 @@ https://github.com/CJTozer/SublimeDiffView
 
 *** Feedback ***
 
-This plugin is still in active development.  If you have any issues, comments, or feature suggestions, please let me know on GitHub (https://github.com/CJTozer/SublimeDiffView/issues).
+This plugin is in active development.  If you have any issues, comments, or feature suggestions, please let me know on GitHub (https://github.com/CJTozer/SublimeDiffView/issues).
 
 All feedback is gratefully received.
