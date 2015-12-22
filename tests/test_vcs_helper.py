@@ -21,8 +21,8 @@ class test_VCSHelper(TestCase):
             (b'output ignored', b'error in Git command'),
             (b'output ignored', b'error in SVN command')
         ]
-        helper = VCSHelper.get_helper('.')
-        self.assertIsNone(helper)
+        with self.assertRaises(diffview.util.vcs.NoVCSError):
+            VCSHelper.get_helper('.')
 
     @patch('subprocess.Popen')
     def test_get_helper_git(self, mocked_Popen):
