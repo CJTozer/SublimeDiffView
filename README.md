@@ -28,7 +28,8 @@
 ## Usage
 * See options under "DiffView" in the Command Palette, and also the following keyboard shortcuts
 * `Alt + Shift + D` to run a diff
-    * *See below for supported diff options*
+    * Enter the diff to run, and hit enter
+        * *See below for supported diff options*
     * This lists all the changes, and shows you a preview as you move down the list
     * You can search for a particular file in the list of changes, which will filter the results
     * Hit `Enter` to jump to the currently selected change
