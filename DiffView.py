@@ -108,32 +108,40 @@ class DiffView(sublime_plugin.WindowCommand):
         else:
             # Put the hunks list in the top panel
             self.changes_list_file = tempfile.mkstemp()[1]
+            with open(self.changes_list_file, 'w') as f:
+                changes_list = "\n".join(
+                    [h.oneline_description for h in self.parser.changed_hunks])
+                f.write(changes_list)
             self.changes_list_view = self.window.open_file(
                 self.changes_list_file,
                 flags=sublime.TRANSIENT |
                 sublime.FORCE_GROUP,
                 group=self.list_group)
+            self.changes_list_view.set_read_only(True)
+            self.changes_list_view.set_scratch(True)
 
-            def show_diff_list_when_ready(view):
+            # Move cursor to the last selected diff when the file is ready
+            def select_latest_diff_when_ready(view):
                 while view.is_loading():
                     time.sleep(0.1)
-                view.parser = self.parser
-                changes_list = "\n".join(
-                    [h.oneline_description for h in self.parser.changed_hunks])
+
+                # Force a change in position - so the selection change event
+                # always triggers.
+                view.sel().clear()
+                view.sel().add(sublime.Region(1, 1))
                 view.run_command(
                     "show_diff_list",
-                    args={'changes_list': changes_list,
-                    'line': self.last_hunk_index})
-                view.set_read_only(True)
+                    args={'last_selected': self.last_hunk_index})
 
-                # Listen for changes to this view's selection.
-                DiffViewEventListner.instance().start_listen(
-                    self.preview_hunk,
-                    view,
-                    self)
+            # Listen for changes to this view's selection.
+            DiffViewEventListner.instance().start_listen(
+                self.preview_hunk,
+                self.changes_list_view,
+                self)
 
+            # Choose the last selected change, when the view's ready
             t = threading.Thread(
-                target=show_diff_list_when_ready,
+                target=select_latest_diff_when_ready,
                 args=(self.changes_list_view,))
             t.start()
 
@@ -243,7 +251,7 @@ class DiffHunksList(sublime_plugin.WindowCommand):
             self.window.last_diff.list_changed_hunks()
 
 class DiffCancel(sublime_plugin.WindowCommand):
-    """Cancel the diff."""
+    """Cancel the current diff."""
     def run(self):
         if hasattr(self.window, 'last_diff'):
             self.window.last_diff.reset_window()
@@ -266,18 +274,13 @@ class ShowDiffListCommand(sublime_plugin.TextCommand):
 
     Args:
         changes_list: The text of the changes list.
-        line: The selected line (zero indexed).
+        last_selected: The last selected change (zero indexed).
     """
-    def run(self, edit, changes_list, line):
-        self.view.set_scratch(True)
-        self.view.insert(edit, 0, changes_list)
-        # Move cursor to top
+    def run(self, edit, last_selected):
+        # Move cursor to the last selected diff
         self.view.sel().clear()
-        pos = self.view.text_point(line, 0)
+        pos = self.view.text_point(last_selected, 0)
         self.view.sel().add(sublime.Region(pos, pos))
-        self.view.set_viewport_position(
-            (0, 0),
-            animate=False)
 
 class DiffViewEventListner(sublime_plugin.EventListener):
     _instance = None
