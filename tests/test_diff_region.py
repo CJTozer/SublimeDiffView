@@ -4,6 +4,7 @@ from unittest import TestCase
 diffview = sys.modules["DiffView"]
 DiffRegion = diffview.parser.diff_region.DiffRegion
 
+
 class test_DiffRegion(TestCase):
 
     def test_diff_region_init(self):

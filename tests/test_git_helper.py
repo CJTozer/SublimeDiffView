@@ -6,6 +6,7 @@ from unittest.mock import patch
 diffview = sys.modules["DiffView"]
 GitHelper = diffview.util.vcs.GitHelper
 
+
 class test_GitHelper(TestCase):
 
     def setUp(self):

@@ -4,10 +4,12 @@ from unittest import TestCase
 diffview = sys.modules["DiffView"]
 HunkDiff = diffview.parser.hunk_diff.HunkDiff
 
+
 class DummyFileDiff(object):
     filename = 'dummy_filename'
     old_file = 'dummy_old_file'
     new_file = 'dummy_new_file'
+
 
 class test_DiffRegion(TestCase):
 
@@ -17,7 +19,8 @@ class test_DiffRegion(TestCase):
     def test_single_add_no_context(self):
         # @@ -10,0 +11,1 @@ some_function():
         # +new line
-        match = ['10', '0', '11', '1',
+        match = [
+            '10', '0', '11', '1',
             'some_function():\n' +
             '+new line'
         ]
@@ -39,7 +42,8 @@ class test_DiffRegion(TestCase):
     def test_single_del_no_context(self):
         # @@ -15,1 +14,0 @@ some_function():
         # -old line
-        match = ['15', '1', '14', '0',
+        match = [
+            '15', '1', '14', '0',
             'some_function():\n' +
             '-old line'
         ]
@@ -62,7 +66,8 @@ class test_DiffRegion(TestCase):
         # @@ -23,1 +34,1 @@ some_function():
         # -old line
         # +new line
-        match = ['23', '1', '34', '1',
+        match = [
+            '23', '1', '34', '1',
             'some_function():\n' +
             '-old line\n' +
             '+new line'
@@ -98,7 +103,8 @@ class test_DiffRegion(TestCase):
         #  unchanged line 4
         #  unchanged line 5
         #  unchanged line 6
-        match = ['116', '8', '119', '9',
+        match = [
+            '116', '8', '119', '9',
             'some_function():\n' +
             ' unchanged line 1\n' +
             ' unchanged line 2\n' +
@@ -143,7 +149,8 @@ class test_DiffRegion(TestCase):
         # +new line 3
         #  unchanged line 5
         #  unchanged line 6
-        match = ['116', '8', '119', '9',
+        match = [
+            '116', '8', '119', '9',
             'some_function():\n' +
             ' unchanged line 1\n' +
             ' unchanged line 2\n' +
@@ -184,8 +191,9 @@ class test_DiffRegion(TestCase):
              'some_function():',
              '5 | +++--'])
 
-
-    def check_region(self, r, diff_type, start_line, start_col, end_line, end_col):
+    def check_region(self, r, diff_type,
+                     start_line, start_col,
+                     end_line, end_col):
         self.assertEqual(r.diff_type, diff_type)
         self.assertEqual(r.start_line, start_line)
         self.assertEqual(r.start_col, start_col)

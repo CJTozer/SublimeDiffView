@@ -7,6 +7,7 @@ VCSHelper = diffview.util.vcs.VCSHelper
 GitHelper = diffview.util.vcs.GitHelper
 SVNHelper = diffview.util.vcs.SVNHelper
 
+
 class test_VCSHelper(TestCase):
 
     def setUp(self):

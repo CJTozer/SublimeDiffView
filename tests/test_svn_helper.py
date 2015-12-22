@@ -1,10 +1,9 @@
 import sys
-import subprocess
 from unittest import TestCase
-from unittest.mock import patch
 
 diffview = sys.modules["DiffView"]
 SVNHelper = diffview.util.vcs.SVNHelper
+
 
 class test_SVNHelper(TestCase):
 

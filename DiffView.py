@@ -250,11 +250,13 @@ class DiffHunksList(sublime_plugin.WindowCommand):
         if hasattr(self.window, 'last_diff'):
             self.window.last_diff.list_changed_hunks()
 
+
 class DiffCancel(sublime_plugin.WindowCommand):
     """Cancel the current diff."""
     def run(self):
         if hasattr(self.window, 'last_diff'):
             self.window.last_diff.reset_window()
+
 
 class DiffShowSelected(sublime_plugin.WindowCommand):
     """Show the change that's curently selected by this view."""
@@ -263,11 +265,13 @@ class DiffShowSelected(sublime_plugin.WindowCommand):
             self.window.last_diff.show_hunk_diff(
                 DiffViewEventListner.instance().current_row)
 
+
 class DiffViewUncommitted(DiffView):
     """Command to display a simple diff of uncommitted changes."""
     def run(self):
         self._prepare()
         self.do_diff('')
+
 
 class ShowDiffListCommand(sublime_plugin.TextCommand):
     """Command to show the diff list.
@@ -281,6 +285,7 @@ class ShowDiffListCommand(sublime_plugin.TextCommand):
         self.view.sel().clear()
         pos = self.view.text_point(last_selected, 0)
         self.view.sel().add(sublime.Region(pos, pos))
+
 
 class DiffViewEventListner(sublime_plugin.EventListener):
     _instance = None
