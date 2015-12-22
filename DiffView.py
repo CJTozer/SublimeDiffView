@@ -7,6 +7,7 @@ import tempfile
 
 from .util.view_finder import ViewFinder
 from .util.constants import Constants
+from .util.vcs import NoVCSError
 from .parser.diff_parser import DiffParser
 
 
@@ -74,9 +75,16 @@ class DiffView(sublime_plugin.WindowCommand):
         """
         self.diff_args = diff_args
 
-        # Create the diff parser
-        cwd = os.path.dirname(self.window.active_view().file_name())
-        self.parser = DiffParser(self.diff_args, cwd)
+        try:
+            # Create the diff parser
+            cwd = os.path.dirname(self.window.active_view().file_name())
+            self.parser = DiffParser(self.diff_args, cwd)
+        except NoVCSError:
+            # No changes; say so
+            sublime.message_dialog(
+                "This file does not appear to be under version control " +
+                "(Git or SVN).")
+            return
 
         if not self.parser.changed_hunks:
             # No changes; say so

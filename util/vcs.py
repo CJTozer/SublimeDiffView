@@ -50,6 +50,9 @@ class VCSHelper(object):
         except:
             pass
 
+        # No VCS found
+        raise NoVCSError
+
     @abstractmethod
     def get_changed_files(self, diff_args):
         """Get a list of changed files."""
@@ -73,6 +76,11 @@ class VCSHelper(object):
     def get_file_content(self, filename, version):
         """Get the contents of a file at a specific version."""
         pass
+
+
+class NoVCSError(Exception):
+    """Exception raised when no VCS is found."""
+    pass
 
 
 class GitHelper(VCSHelper):
