@@ -47,44 +47,44 @@ class FileDiff(object):
             self.hunks.append(HunkDiff(self, hunks[:match_len]))
             hunks = hunks[match_len:]
 
-    def add_old_regions(self, view):
+    def add_old_regions(self, view, styles):
         """Add all highlighted regions to the view for this (old) file."""
         view.add_regions(
             Constants.ADD_REGION_KEY,
             [r for h in self.hunks for r in h.get_old_regions(view)
                 if h.hunk_type == "ADD"],
-            Constants.ADD_REGION_STYLE,
+            styles["ADD"],
             flags=Constants.ADD_REGION_FLAGS)
         view.add_regions(
             Constants.MOD_REGION_KEY,
             [r for h in self.hunks for r in h.get_old_regions(view)
                 if h.hunk_type == "MOD"],
-            Constants.MOD_REGION_STYLE,
+            styles["MOD"],
             flags=Constants.MOD_REGION_FLAGS)
         view.add_regions(
             Constants.DEL_REGION_KEY,
             [r for h in self.hunks for r in h.get_old_regions(view)
                 if h.hunk_type == "DEL"],
-            Constants.DEL_REGION_STYLE,
+            styles["DEL"],
             flags=Constants.DEL_REGION_FLAGS)
 
-    def add_new_regions(self, view):
+    def add_new_regions(self, view, styles):
         """Add all highlighted regions to the view for this (new) file."""
         view.add_regions(
             Constants.ADD_REGION_KEY,
             [r for h in self.hunks for r in h.get_new_regions(view)
                 if h.hunk_type == "ADD"],
-            Constants.ADD_REGION_STYLE,
+            styles["ADD"],
             flags=Constants.ADD_REGION_FLAGS)
         view.add_regions(
             Constants.MOD_REGION_KEY,
             [r for h in self.hunks for r in h.get_new_regions(view)
                 if h.hunk_type == "MOD"],
-            Constants.MOD_REGION_STYLE,
+            styles["MOD"],
             flags=Constants.MOD_REGION_FLAGS)
         view.add_regions(
             Constants.DEL_REGION_KEY,
             [r for h in self.hunks for r in h.get_new_regions(view)
                 if h.hunk_type == "DEL"],
-            Constants.DEL_REGION_STYLE,
+            styles["DEL"],
             flags=Constants.DEL_REGION_FLAGS)

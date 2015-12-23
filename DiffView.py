@@ -25,6 +25,10 @@ class DiffView(sublime_plugin.WindowCommand):
         self.last_hunk_index = 0
         self.settings = sublime.load_settings('DiffView.sublime-settings')
         self.view_style = self.settings.get("view_style", "quick_panel")
+        self.styles = {
+            "ADD": self.settings.get("add_highlight_style", "support.class"),
+            "MOD": self.settings.get("mod_highlight_style", "string"),
+            "DEL": self.settings.get("del_highlight_style", "invalid")}
 
         # Set up the groups
         self.list_group = 0
@@ -193,7 +197,7 @@ class DiffView(sublime_plugin.WindowCommand):
         def highlight_when_ready(view, highlight_fn):
             while view.is_loading():
                 time.sleep(0.1)
-            highlight_fn(view)
+            highlight_fn(view, self.styles)
 
         right_view = self.window.open_file(
             new_filespec,
