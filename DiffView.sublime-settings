@@ -2,5 +2,13 @@
     // The style for viewing the diff.  Options are:
     // - "quick_panel"
     // - "persistent_list"
-    "view_style": "quick_panel"
+    "view_style": "quick_panel",
+
+    // The styles to use for different highlights.
+    // The defaults work reasonably well for most colour schemes.
+    // For some, e.g. Molokai that define them, "markup.inserted",
+    // "markup.changed" and "markup.deleted" work even better.
+    "add_highlight_style": "support.class",
+    "mod_highlight_style": "string",
+    "del_highlight_style": "invalid"
 }
