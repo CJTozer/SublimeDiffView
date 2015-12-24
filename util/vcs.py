@@ -139,7 +139,11 @@ class GitHelper(VCSHelper):
 
     def get_file_content(self, filename, version):
         git_args = ['show', '{}:{}'.format(version, filename)]
-        return self.git_command(git_args)
+        try:
+            content = self.git_command(git_args)
+        except UnicodeDecodeError:
+            content = "Unable to decode file..."
+        return content
 
     def git_command(self, args):
         """Wrapper to run a Git command."""
@@ -225,7 +229,11 @@ class SVNHelper(VCSHelper):
         return ('-r HEAD', '')
 
     def get_file_content(self, filename, version):
-        return self.svn_command(['cat', version, filename])
+        try:
+            content = self.svn_command(['cat', version, filename])
+        except UnicodeDecodeError:
+            content = "Unable to decode file..."
+        return content
 
     def svn_command(self, args):
         """Wrapper to run an SVN command."""
