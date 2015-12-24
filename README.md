@@ -67,7 +67,7 @@
 
 ## Configuration Options
 
-### View Style
+### Diff View Style
 
 There are 2 different view styles supported - "Quick Panel" and "Persistent List".  You can see them in action in the screenshots above.  Try them both and pick a favourite!
 
@@ -79,6 +79,10 @@ There are 2 different view styles supported - "Quick Panel" and "Persistent List
     "view_style": "persistent_list"
 }
 ```
+
+### Highlighting Styles
+
+Each of the highlihgted regions' styles can be configured in the settings.  These settings are all documented in the 'Default' settings (`Preferences -> Package Settings -> DiffVew -> Settings - Default`).  Copy the settings to your User settings (`Preferences -> Package Settings -> DiffVew -> Settings - User`) to override the defaults.
 
 ## Feedback
 
