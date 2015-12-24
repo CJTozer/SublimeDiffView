@@ -19,6 +19,5 @@ class Constants(object):
                         sublime.DRAW_NO_FILL)
 
     SELECTED_CHANGE_KEY = 'diffview-selected-change'
-    SELECTED_CHANGE_STYLE = 'comment'
     SELECTED_CHANGE_FLAGS = (sublime.DRAW_EMPTY |
                              sublime.HIDE_ON_MINIMAP)

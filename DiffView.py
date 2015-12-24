@@ -28,7 +28,9 @@ class DiffView(sublime_plugin.WindowCommand):
         self.styles = {
             "ADD": self.settings.get("add_highlight_style", "support.class"),
             "MOD": self.settings.get("mod_highlight_style", "string"),
-            "DEL": self.settings.get("del_highlight_style", "invalid")}
+            "DEL": self.settings.get("del_highlight_style", "invalid"),
+            "LIST_SEL": self.settings.get(
+                "list_sel_highlight_style", "comment")}
 
         # Set up the groups
         self.list_group = 0
@@ -143,7 +145,8 @@ class DiffView(sublime_plugin.WindowCommand):
                 view.sel().add(sublime.Region(1, 1))
                 view.run_command(
                     "show_diff_list",
-                    args={'last_selected': self.last_hunk_index})
+                    args={'last_selected': self.last_hunk_index,
+                    'style': self.styles['LIST_SEL']})
 
             # Listen for changes to this view's selection.
             DiffViewEventListner.instance().start_listen(
@@ -292,7 +295,7 @@ class ShowDiffListCommand(sublime_plugin.TextCommand):
         changes_list: The text of the changes list.
         last_selected: The last selected change (zero indexed).
     """
-    def run(self, edit, last_selected):
+    def run(self, edit, last_selected, style):
         # Move cursor to the last selected diff
         self.view.sel().clear()
         pos = self.view.text_point(last_selected, 0)
@@ -303,7 +306,7 @@ class ShowDiffListCommand(sublime_plugin.TextCommand):
         self.view.add_regions(
             Constants.SELECTED_CHANGE_KEY,
             [sublime.Region(pos, end_pos)],
-            Constants.SELECTED_CHANGE_STYLE,
+            style,
             flags=Constants.SELECTED_CHANGE_FLAGS)
 
 
@@ -335,7 +338,7 @@ class DiffViewEventListner(sublime_plugin.EventListener):
             view.add_regions(
                 Constants.SELECTED_CHANGE_KEY,
                 [selected_line_region],
-                Constants.SELECTED_CHANGE_STYLE,
+                self.diff.styles["LIST_SEL"],
                 flags=Constants.SELECTED_CHANGE_FLAGS)
 
     def on_query_context(self, view, key, operator, operand, match_all):
