@@ -6,9 +6,6 @@ class Constants(object):
     ADD_REGION_KEY = 'diffview-highlight-addition'
     MOD_REGION_KEY = 'diffview-highlight-modification'
     DEL_REGION_KEY = 'diffview-highlight-deletion'
-    ADD_REGION_STYLE = 'support.class'
-    MOD_REGION_STYLE = 'string'
-    DEL_REGION_STYLE = 'invalid'
     ADD_REGION_FLAGS = (sublime.DRAW_EMPTY |
                         sublime.HIDE_ON_MINIMAP |
                         sublime.DRAW_EMPTY_AS_OVERWRITE |
@@ -22,6 +19,5 @@ class Constants(object):
                         sublime.DRAW_NO_FILL)
 
     SELECTED_CHANGE_KEY = 'diffview-selected-change'
-    SELECTED_CHANGE_STYLE = 'comment'
     SELECTED_CHANGE_FLAGS = (sublime.DRAW_EMPTY |
                              sublime.HIDE_ON_MINIMAP)
