@@ -298,6 +298,14 @@ class ShowDiffListCommand(sublime_plugin.TextCommand):
         pos = self.view.text_point(last_selected, 0)
         self.view.sel().add(sublime.Region(pos, pos))
 
+        # Highlight the selected line
+        end_pos = self.view.text_point(last_selected + 1, 0)
+        self.view.add_regions(
+            Constants.SELECTED_CHANGE_KEY,
+            [sublime.Region(pos, end_pos)],
+            Constants.SELECTED_CHANGE_STYLE,
+            flags=Constants.SELECTED_CHANGE_FLAGS)
+
 
 class DiffViewEventListner(sublime_plugin.EventListener):
     _instance = None
@@ -318,6 +326,17 @@ class DiffViewEventListner(sublime_plugin.EventListener):
             (self.current_row, _) = view.rowcol(current_selection.a)
             # rowcol is zero indexed, so line 1 gives index zero - perfect
             self.diff.preview_hunk(self.current_row)
+
+            # Highlight the selected line
+            view.erase_regions(Constants.SELECTED_CHANGE_KEY)
+            selected_line_region = sublime.Region(
+                self.view.text_point(self.current_row, 0),
+                self.view.text_point(self.current_row + 1, 0))
+            view.add_regions(
+                Constants.SELECTED_CHANGE_KEY,
+                [selected_line_region],
+                Constants.SELECTED_CHANGE_STYLE,
+                flags=Constants.SELECTED_CHANGE_FLAGS)
 
     def on_query_context(self, view, key, operator, operand, match_all):
         """Context queries mean someone is trying to work out whether to
