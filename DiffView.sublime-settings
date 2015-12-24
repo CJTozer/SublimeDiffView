@@ -10,5 +10,8 @@
     // "markup.changed" and "markup.deleted" work even better.
     "add_highlight_style": "support.class",
     "mod_highlight_style": "string",
-    "del_highlight_style": "invalid"
+    "del_highlight_style": "invalid",
+
+    // Style for the currently selected change in the 'persistent list'.
+    "list_sel_highlight_style": "comment"
 }
