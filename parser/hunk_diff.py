@@ -48,18 +48,19 @@ class HunkDiff(object):
         self.parse_diff()
         if self.del_lines == 0:
             self.hunk_type = "ADD"
+            plus_minus = "{}+".format(self.add_lines)
         elif self.add_lines == 0:
             self.hunk_type = "DEL"
+            plus_minus = "{}-".format(self.del_lines)
         else:
             self.hunk_type = "MOD"
+            plus_minus = "{}+/{}-".format(self.add_lines, self.del_lines)
 
         # Create the hunk description that will appear in the change list view
-        self.oneline_description = "{:40} {:60} {:>4} {}{}".format(
+        self.oneline_description = "{:40} {:60} {}".format(
             "{} : {}".format(self.file_diff.filename, self.new_line_focus),
             self.context,
-            self.add_lines + self.del_lines,
-            "+" * self.add_lines,
-            "-" * self.del_lines)
+            plus_minus)
         # Create the hunk description that will appear in the quick_panel
         self.description = [
             "{} : {}".format(self.file_diff.filename, self.new_line_focus),
