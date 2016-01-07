@@ -168,7 +168,6 @@ class HunkDiff(object):
 
     def merge(self, view, edit, direction):
         print("Merging {} {} {}".format(view, edit, direction))
-        print("== right? {}".format(direction == 'right'))
         if direction == 'right':
             if self.merge_state == self.MERGED_LEFT:
                 # @@@ Revert back to the unmerged state

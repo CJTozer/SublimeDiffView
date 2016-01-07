@@ -22,17 +22,19 @@
         ]
     },
     {
-        "command": "diff_merge_right",
+        "command": "diff_merge",
         "keys": ["alt+right"],
         "context": [
             { "key": "diff_changes_list" }
-        ]
+        ],
+        "args": { "direction": "right" }
     },
     {
-        "command": "diff_merge_left",
+        "command": "diff_merge",
         "keys": ["alt+left"],
         "context": [
             { "key": "diff_changes_list" }
-        ]
+        ],
+        "args": { "direction": "left" }
     },
 ]

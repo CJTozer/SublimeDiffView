@@ -281,18 +281,13 @@ class DiffShowSelected(sublime_plugin.WindowCommand):
                 DiffViewEventListner.instance().current_row)
 
 
-class DiffMergeRight(sublime_plugin.WindowCommand):
-    """Merge the currently selected change from the left file to the right."""
-    def run(self):
+class DiffMerge(sublime_plugin.WindowCommand):
+    """Merge the currently selected change."""
+    def run(self, direction):
         if hasattr(self.window, 'last_diff'):
-            self.window.last_diff.right_view.run_command('merge_hunk', {'direction': 'right'})
-
-
-class DiffMergeLeft(sublime_plugin.WindowCommand):
-    """Merge the currently selected change from the right file to the left."""
-    def run(self):
-        if hasattr(self.window, 'last_diff'):
-            self.window.last_diff.right_view.run_command('merge_hunk', {'direction': 'left'})
+            self.window.last_diff.right_view.run_command(
+                'merge_hunk',
+                {'direction': direction})
 
 
 class MergeHunkCommand(sublime_plugin.TextCommand):
