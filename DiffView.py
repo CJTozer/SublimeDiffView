@@ -202,7 +202,7 @@ class DiffView(sublime_plugin.WindowCommand):
                 time.sleep(0.1)
             highlight_fn(view, self.styles)
 
-        right_view = self.window.open_file(
+        self.right_view = self.window.open_file(
             new_filespec,
             flags=sublime.TRANSIENT |
             sublime.ENCODED_POSITION |
@@ -210,10 +210,10 @@ class DiffView(sublime_plugin.WindowCommand):
             group=self.rhs_group)
         t = threading.Thread(
             target=highlight_when_ready,
-            args=(right_view, hunk.file_diff.add_new_regions))
+            args=(self.right_view, hunk.file_diff.add_new_regions))
         t.start()
 
-        left_view = self.window.open_file(
+        self.left_view = self.window.open_file(
             old_filespec,
             flags=sublime.TRANSIENT |
             sublime.ENCODED_POSITION |
@@ -221,7 +221,7 @@ class DiffView(sublime_plugin.WindowCommand):
             group=self.lhs_group)
         t = threading.Thread(
             target=highlight_when_ready,
-            args=(left_view, hunk.file_diff.add_old_regions))
+            args=(self.left_view, hunk.file_diff.add_old_regions))
         t.start()
 
         self.window.focus_group(0)
@@ -280,6 +280,31 @@ class DiffShowSelected(sublime_plugin.WindowCommand):
             self.window.last_diff.show_hunk_diff(
                 DiffViewEventListner.instance().current_row)
 
+
+class DiffMergeRight(sublime_plugin.WindowCommand):
+    """Merge the currently selected change from the left file to the right."""
+    def run(self):
+        if hasattr(self.window, 'last_diff'):
+            self.window.last_diff.right_view.run_command('merge_hunk', {'direction': 'right'})
+
+
+class DiffMergeLeft(sublime_plugin.WindowCommand):
+    """Merge the currently selected change from the right file to the left."""
+    def run(self):
+        if hasattr(self.window, 'last_diff'):
+            self.window.last_diff.right_view.run_command('merge_hunk', {'direction': 'left'})
+
+
+class MergeHunkCommand(sublime_plugin.TextCommand):
+    def run(self, edit, direction):
+        view = self.view
+        hunk_index = DiffViewEventListner.instance().current_row
+        hunk = DiffViewEventListner.instance().diff.parser.changed_hunks[hunk_index]
+        if not hunk.merge_valid(direction):
+            # Merge not valid
+            return
+
+        hunk.merge(view, edit, direction)
 
 class DiffViewUncommitted(DiffView):
     """Command to display a simple diff of uncommitted changes."""

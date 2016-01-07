@@ -9,6 +9,9 @@ class HunkDiff(object):
     NEWLINE_MATCH = re.compile('\r?\n')
     ADD_LINE_MATCH = re.compile('^\+(.*)')
     DEL_LINE_MATCH = re.compile('^\-(.*)')
+    UNMERGED = 'unmerged'
+    MERGED_RIGHT = 'merged right'
+    MERGED_LEFT = 'merged left'
     """Representation of a single 'hunk' from a Git diff.
 
     Args:
@@ -22,6 +25,7 @@ class HunkDiff(object):
         self.new_regions = []
         self.old_line_focus = -1
         self.new_line_focus = -1
+        self.merge_state = self.UNMERGED
 
         # Matches' meanings are:
         # - 0: start line in old file
@@ -150,3 +154,32 @@ class HunkDiff(object):
             view.text_point(r.start_line - 1, r.start_col),
             view.text_point(r.end_line - 1, r.end_col))
             for r in self.new_regions]
+
+    def merge_valid(self, direction):
+        """Is it valid to merge this hunk in the given direction?"""
+        print("State: #{}#, direction #{}#".format(self.merge_state, direction))
+        if self.merge_state == self.UNMERGED:
+            return True
+        elif self.merge_state == self.MERGED_LEFT and direction == 'right':
+            return True
+        elif self.merge_state == self.MERGED_RIGHT and direction == 'left':
+            return True
+        return False
+
+    def merge(self, view, edit, direction):
+        print("Merging {} {} {}".format(view, edit, direction))
+        print("== right? {}".format(direction == 'right'))
+        if direction == 'right':
+            if self.merge_state == self.MERGED_LEFT:
+                # @@@ Revert back to the unmerged state
+                self.merge_state = self.UNMERGED
+            else:
+                # @@@ Merge right
+                self.merge_state = self.MERGED_RIGHT
+        else:
+            if self.merge_state == self.MERGED_RIGHT:
+                # @@@ Revert back to the unmerged state
+                self.merge_state = self.UNMERGED
+            else:
+                # @@@ Merge left
+                self.merge_state = self.MERGED_LEFT

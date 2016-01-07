@@ -21,4 +21,18 @@
             { "key": "diff_changes_list" }
         ]
     },
+    {
+        "command": "diff_merge_right",
+        "keys": ["alt+right"],
+        "context": [
+            { "key": "diff_changes_list" }
+        ]
+    },
+    {
+        "command": "diff_merge_left",
+        "keys": ["alt+left"],
+        "context": [
+            { "key": "diff_changes_list" }
+        ]
+    },
 ]
