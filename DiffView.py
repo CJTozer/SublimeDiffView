@@ -146,7 +146,7 @@ class DiffView(sublime_plugin.WindowCommand):
                 view.run_command(
                     "show_diff_list",
                     args={'last_selected': self.last_hunk_index,
-                    'style': self.styles['LIST_SEL']})
+                          'style': self.styles['LIST_SEL']})
 
             # Listen for changes to this view's selection.
             DiffViewEventListner.instance().start_listen(

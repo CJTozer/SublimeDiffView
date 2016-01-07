@@ -8,7 +8,7 @@
     // The defaults work reasonably well for most colour schemes.
     // For some, e.g. Molokai that define them, "markup.inserted",
     // "markup.changed" and "markup.deleted" work even better.
-    "add_highlight_style": "support.class",
+    "add_highlight_style": "entity.name.class",
     "mod_highlight_style": "string",
     "del_highlight_style": "invalid",
 
