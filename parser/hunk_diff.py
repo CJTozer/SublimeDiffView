@@ -143,6 +143,11 @@ class HunkDiff(object):
 
     def get_old_regions(self, view):
         """Create a `sublime.Region` for each (old) part of this hunk."""
+        self.full_old_region = sublime.Region(
+            view.text_point(self.old_line_start - 1, 0),
+            view.text_point(self.old_line_start + self.old_hunk_len - 1, 0))
+        self.full_old_text = view.substr(self.full_old_region)
+        # @@@ Regions need to be set once at the start, then kept in place...
         return [sublime.Region(
             view.text_point(r.start_line - 1, r.start_col),
             view.text_point(r.end_line - 1, r.end_col))
@@ -150,6 +155,11 @@ class HunkDiff(object):
 
     def get_new_regions(self, view):
         """Create a `sublime.Region` for each (new) part of this hunk."""
+        self.full_new_region = sublime.Region(
+            view.text_point(self.new_line_start - 1, 0),
+            view.text_point(self.new_line_start + self.new_hunk_len - 1, 0))
+        self.full_new_text = view.substr(self.full_new_region)
+        # @@@ Regions need to be set once at the start, then kept in place...
         return [sublime.Region(
             view.text_point(r.start_line - 1, r.start_col),
             view.text_point(r.end_line - 1, r.end_col))
@@ -157,7 +167,6 @@ class HunkDiff(object):
 
     def merge_valid(self, direction):
         """Is it valid to merge this hunk in the given direction?"""
-        print("State: #{}#, direction #{}#".format(self.merge_state, direction))
         if self.merge_state == self.UNMERGED:
             return True
         elif self.merge_state == self.MERGED_LEFT and direction == 'right':
@@ -166,19 +175,26 @@ class HunkDiff(object):
             return True
         return False
 
-    def merge(self, view, edit, direction):
-        print("Merging {} {} {}".format(view, edit, direction))
+    def merge(self, left_view, right_view, edit, direction):
         if direction == 'right':
             if self.merge_state == self.MERGED_LEFT:
                 # @@@ Revert back to the unmerged state
+                left_view.replace(edit, self.full_old_region, self.full_old_text)
+                # @@@ Re-evaluate self.full_old_region?
                 self.merge_state = self.UNMERGED
             else:
                 # @@@ Merge right
+                right_view.replace(edit, self.full_new_region, self.full_old_text)
+                # @@@ Re-evaluate self.full_new_region?
                 self.merge_state = self.MERGED_RIGHT
         else:
             if self.merge_state == self.MERGED_RIGHT:
                 # @@@ Revert back to the unmerged state
+                right_view.replace(edit, self.full_new_region, self.full_new_text)
+                # @@@ Re-evaluate self.full_new_region?
                 self.merge_state = self.UNMERGED
             else:
                 # @@@ Merge left
+                left_view.replace(edit, self.full_old_region, self.full_new_text)
+                # @@@ Re-evaluate self.full_old_region?
                 self.merge_state = self.MERGED_LEFT

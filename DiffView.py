@@ -294,12 +294,13 @@ class MergeHunkCommand(sublime_plugin.TextCommand):
     def run(self, edit, direction):
         view = self.view
         hunk_index = DiffViewEventListner.instance().current_row
-        hunk = DiffViewEventListner.instance().diff.parser.changed_hunks[hunk_index]
+        diff = DiffViewEventListner.instance().diff
+        hunk = diff.parser.changed_hunks[hunk_index]
         if not hunk.merge_valid(direction):
             # Merge not valid
             return
 
-        hunk.merge(view, edit, direction)
+        hunk.merge(diff.left_view, diff.right_view, edit, direction)
 
 class DiffViewUncommitted(DiffView):
     """Command to display a simple diff of uncommitted changes."""
