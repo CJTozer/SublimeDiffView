@@ -2,7 +2,7 @@
     // The style for viewing the diff.  Options are:
     // - "quick_panel"
     // - "persistent_list"
-    "view_style": "quick_panel",
+    "view_style": "persistent_list",
 
     // The styles to use for different highlights.
     // The defaults work reasonably well for most colour schemes.
