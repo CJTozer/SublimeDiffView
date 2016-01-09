@@ -49,7 +49,7 @@ class test_VCSHelper(TestCase):
         self.assertEquals(helper.svn_base, '/dir/to/svn')
 
 
-class DummyProcess():
+class DummyProcess(object):
     """Dummy process to return values from `communicate()`.
 
     Set `ret_vals` to use.

@@ -68,7 +68,7 @@ class test_GitHelper(TestCase):
             cwd='/repo/base')
 
 
-class DummyProcess():
+class DummyProcess(object):
     """Dummy process to return values from `communicate()`.
 
     Set `ret_vals` to use.

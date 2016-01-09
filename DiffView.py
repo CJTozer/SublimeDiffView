@@ -63,6 +63,10 @@ class DiffView(sublime_plugin.WindowCommand):
                 self.view_style))
 
     def run(self):
+        """Runs the diff.
+
+        Starts by asking for diff arguments in an input panel.
+        """
         self._prepare()
 
         # Use show_input_panel as show_quick_panel doesn't allow arbitrary data
@@ -257,25 +261,25 @@ class DiffView(sublime_plugin.WindowCommand):
 
 
 class DiffHunksList(sublime_plugin.WindowCommand):
-    """Resume the previous diff.
-
-    Displays the list of changed hunks starting from the last hunk viewed.
-    """
     def run(self):
+        """Resume the previous diff.
+
+        Displays the list of changed hunks starting from the last hunk viewed.
+        """
         if hasattr(self.window, 'last_diff'):
             self.window.last_diff.list_changed_hunks()
 
 
 class DiffCancel(sublime_plugin.WindowCommand):
-    """Cancel the current diff."""
     def run(self):
+        """Cancel the current diff."""
         if hasattr(self.window, 'last_diff'):
             self.window.last_diff.reset_window()
 
 
 class DiffShowSelected(sublime_plugin.WindowCommand):
-    """Show the change that's curently selected by this view."""
     def run(self):
+        """Show the change that's curently selected by this view."""
         if hasattr(self.window, 'last_diff'):
             self.window.last_diff.show_hunk_diff(
                 DiffViewEventListner.instance().current_row)

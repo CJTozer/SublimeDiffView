@@ -1,0 +1,21 @@
+  ____  _  __  ____     ___
+ |  _ \(_)/ _|/ _\ \   / (_) _____      __
+ | | | | | |_| |_ \ \ / /| |/ _ \ \ /\ / /
+ | |_| | |  _|  _| \ V / | |  __/\ V  V /
+ |____/|_|_| |_|    \_/  |_|\___| \_/\_/
+
+
+A quick update for DiffView v1.0.1 - the default view style has changed to be
+"persistent_list" instead of "quick_panel".  I think this is a better option,
+and so have decided it should be what new users get.
+
+If you want to set the view back to "quick_panel", then
+- go to "Preferences -> Package Settings -> DiffView -> Settings - User"
+- add the following option to your settings:
+
+{
+  "view_style": "quick_panel"
+}
+
+I hope you enjoy the new style.  Please do let me have any feedback on GitHub:
+https://github.com/CJTozer/SublimeDiffView/issues.
