@@ -5,13 +5,18 @@ from ..util.vcs import VCSHelper
 
 
 class DiffParser(object):
-    """Representation of the entire diff.
+    """Class for handling understanding and parsing a specific diff.
 
-    Args:
-        diff_args: The arguments to be used for the Git diff.
-        cwd: The working directory.
+    This class represents the entire diff.
     """
+
     def __init__(self, diff_args, cwd):
+        """Constructor.
+
+        Args:
+            diff_args: The arguments to be used for the Git diff.
+            cwd: The working directory.
+        """
         self.diff_args = diff_args
         self.cwd = cwd
         self.temp_dir = tempfile.mkdtemp()
@@ -21,7 +26,6 @@ class DiffParser(object):
         for f in self.changed_files:
             self.changed_hunks += f.get_hunks()
 
-        # Set up the required files
         self.setup_files()
 
     def setup_files(self):
@@ -34,18 +38,13 @@ class DiffParser(object):
                 changed_file.old_file = changed_file.abs_filename
             else:
                 # Get the old file contents in the temporary dir.
-                changed_file.old_file = os.path.join(
-                    self.temp_dir,
-                    'old',
-                    changed_file.filename)
+                changed_file.old_file = os.path.join(self.temp_dir, 'old', changed_file.filename)
                 old_dir = os.path.dirname(changed_file.old_file)
 
                 if not os.path.exists(old_dir):
                     os.makedirs(old_dir)
                 with open(changed_file.old_file, 'w') as f:
-                    old_file_content = self.vcs_helper.get_file_content(
-                        changed_file.filename,
-                        old_ver)
+                    old_file_content = self.vcs_helper.get_file_content(changed_file.filename, old_ver)
                     f.write(old_file_content.replace('\r\n', '\n'))
 
             if new_ver == '':
@@ -62,7 +61,5 @@ class DiffParser(object):
                 if not os.path.exists(new_dir):
                     os.makedirs(new_dir)
                 with open(changed_file.new_file, 'w') as f:
-                    new_file_content = self.vcs_helper.get_file_content(
-                        changed_file.filename,
-                        new_ver)
+                    new_file_content = self.vcs_helper.get_file_content(changed_file.filename, new_ver)
                     f.write(new_file_content.replace('\r\n', '\n'))
