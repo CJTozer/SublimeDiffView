@@ -9,9 +9,9 @@ class HunkDiff(object):
     NEWLINE_MATCH = re.compile('\r?\n')
     ADD_LINE_MATCH = re.compile('^\+(.*)')
     DEL_LINE_MATCH = re.compile('^\-(.*)')
-    UNMERGED = 'unmerged'
-    MERGED_RIGHT = 'merged right'
-    MERGED_LEFT = 'merged left'
+    UNMERGED = 0
+    MERGED_RIGHT = 1
+    MERGED_LEFT = -1
     """Representation of a single 'hunk' from a Git diff.
 
     Args:
@@ -25,6 +25,8 @@ class HunkDiff(object):
         self.new_regions = []
         self.old_line_focus = -1
         self.new_line_focus = -1
+        self.full_old_region = None
+        self.full_new_region = None
         self.merge_state = self.UNMERGED
 
         # Matches' meanings are:
@@ -142,31 +144,46 @@ class HunkDiff(object):
         return (old_filespec, new_filespec)
 
     def get_old_regions(self, view):
-        """Create a `sublime.Region` for each (old) part of this hunk."""
-        self.full_old_region = sublime.Region(
-            view.text_point(self.old_line_start - 1, 0),
-            view.text_point(self.old_line_start + self.old_hunk_len - 1, 0))
-        self.full_old_text = view.substr(self.full_old_region)
-        # @@@ Regions need to be set once at the start, then kept in place...
+        """Create a `sublime.Region` for each (old) part of this hunk.
+
+        Args:
+            view: The view to create regions in.
+        """
+        if not self.full_old_region:
+            self.full_old_region = sublime.Region(
+                view.text_point(self.old_line_start-1, 0),
+                view.text_point(self.old_line_start+self.old_hunk_len-1, 0))
+            self.full_old_text = view.substr(self.full_old_region)
         return [sublime.Region(
             view.text_point(r.start_line - 1, r.start_col),
             view.text_point(r.end_line - 1, r.end_col))
             for r in self.old_regions]
 
     def get_new_regions(self, view):
-        """Create a `sublime.Region` for each (new) part of this hunk."""
-        self.full_new_region = sublime.Region(
-            view.text_point(self.new_line_start - 1, 0),
-            view.text_point(self.new_line_start + self.new_hunk_len - 1, 0))
-        self.full_new_text = view.substr(self.full_new_region)
-        # @@@ Regions need to be set once at the start, then kept in place...
+        """Create a `sublime.Region` for each (new) part of this hunk.
+
+        Args:
+            view: The view to create regions in.
+        """
+        if not self.full_new_region:
+            self.full_new_region = sublime.Region(
+                view.text_point(self.new_line_start-1, 0),
+                view.text_point(self.new_line_start+self.new_hunk_len-1, 0))
+            self.full_new_text = view.substr(self.full_new_region)
         return [sublime.Region(
             view.text_point(r.start_line - 1, r.start_col),
             view.text_point(r.end_line - 1, r.end_col))
             for r in self.new_regions]
 
     def merge_valid(self, direction):
-        """Is it valid to merge this hunk in the given direction?"""
+        """Is it valid to merge this hunk in the given direction?
+
+        Args:
+            direction: The direction of the merge.
+
+        Returns:
+            Whether the merge is valid.
+        """
         if self.merge_state == self.UNMERGED:
             return True
         elif self.merge_state == self.MERGED_LEFT and direction == 'right':
@@ -175,26 +192,52 @@ class HunkDiff(object):
             return True
         return False
 
-    def merge(self, left_view, right_view, edit, direction):
+    def merge_changing_view(self, direction):
+        """Pick the view that's actually going to change from this merge.
+
+        Doesn't check whether the merge is actually valid - use `merge_valid`
+        to check that.
+
+        Args:
+            direction: The direction of the merge ('right' or 'left').
+
+        Returns:
+            'right' or 'left'.
+        """
         if direction == 'right':
             if self.merge_state == self.MERGED_LEFT:
-                # @@@ Revert back to the unmerged state
-                left_view.replace(edit, self.full_old_region, self.full_old_text)
-                # @@@ Re-evaluate self.full_old_region?
-                self.merge_state = self.UNMERGED
+                return 'left'
             else:
-                # @@@ Merge right
-                right_view.replace(edit, self.full_new_region, self.full_old_text)
-                # @@@ Re-evaluate self.full_new_region?
-                self.merge_state = self.MERGED_RIGHT
+                return 'right'
         else:
             if self.merge_state == self.MERGED_RIGHT:
-                # @@@ Revert back to the unmerged state
-                right_view.replace(edit, self.full_new_region, self.full_new_text)
-                # @@@ Re-evaluate self.full_new_region?
-                self.merge_state = self.UNMERGED
+                return 'right'
             else:
-                # @@@ Merge left
-                left_view.replace(edit, self.full_old_region, self.full_new_text)
-                # @@@ Re-evaluate self.full_old_region?
-                self.merge_state = self.MERGED_LEFT
+                return 'left'
+
+    def merge(self, view, edit, direction):
+        """Perform the merge of this hunk.
+
+        Args:
+            view: The view that's changing.
+            edit: The edit for that view.
+            direction: The direction of the merge.
+        """
+        if direction == 'right':
+            text = self.full_old_text
+        else:
+            text = self.full_new_text
+        if self.merge_changing_view(direction) == 'right':
+            region = self.full_new_region
+        else:
+            region = self.full_old_region
+
+        view.replace(edit, region, text)
+
+        # Update this hunk's state
+        if direction == 'right':
+            self.merge_state += 1
+        else:
+            self.merge_state -= 1
+
+        # @@@ Update the full_new_region or full_old_region

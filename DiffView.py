@@ -63,6 +63,10 @@ class DiffView(sublime_plugin.WindowCommand):
                 self.view_style))
 
     def run(self):
+        """Runs the diff.
+
+        Starts by asking for diff arguments in an input panel.
+        """
         self._prepare()
 
         # Use show_input_panel as show_quick_panel doesn't allow arbitrary data
@@ -257,42 +261,58 @@ class DiffView(sublime_plugin.WindowCommand):
 
 
 class DiffHunksList(sublime_plugin.WindowCommand):
-    """Resume the previous diff.
-
-    Displays the list of changed hunks starting from the last hunk viewed.
-    """
     def run(self):
+        """Resume the previous diff.
+
+        Displays the list of changed hunks starting from the last hunk viewed.
+        """
         if hasattr(self.window, 'last_diff'):
             self.window.last_diff.list_changed_hunks()
 
 
 class DiffCancel(sublime_plugin.WindowCommand):
-    """Cancel the current diff."""
     def run(self):
+        """Cancel the current diff."""
         if hasattr(self.window, 'last_diff'):
             self.window.last_diff.reset_window()
 
 
 class DiffShowSelected(sublime_plugin.WindowCommand):
-    """Show the change that's curently selected by this view."""
     def run(self):
+        """Show the change that's curently selected by this view."""
         if hasattr(self.window, 'last_diff'):
             self.window.last_diff.show_hunk_diff(
                 DiffViewEventListner.instance().current_row)
 
 
 class DiffMerge(sublime_plugin.WindowCommand):
-    """Merge the currently selected change."""
     def run(self, direction):
+        """Merge the currently selected change.
+
+        Args:
+            direction: The direction of the merge.
+        """
         if hasattr(self.window, 'last_diff'):
-            self.window.last_diff.right_view.run_command(
-                'merge_hunk',
-                {'direction': direction})
+            hunk_index = DiffViewEventListner.instance().current_row
+            hunk = self.window.last_diff.parser.changed_hunks[hunk_index]
+            if hunk.merge_changing_view(direction) == 'right':
+                self.window.last_diff.right_view.run_command(
+                    'merge_hunk',
+                    {'direction': direction})
+            else:
+                self.window.last_diff.left_view.run_command(
+                    'merge_hunk',
+                    {'direction': direction})
 
 
 class MergeHunkCommand(sublime_plugin.TextCommand):
     def run(self, edit, direction):
-        view = self.view
+        """Merge the current hunk in the specified direction.
+
+        Arguments:
+            edit -- the edit for the changing view
+            direction -- the direction of the merge
+        """
         hunk_index = DiffViewEventListner.instance().current_row
         diff = DiffViewEventListner.instance().diff
         hunk = diff.parser.changed_hunks[hunk_index]
@@ -300,7 +320,8 @@ class MergeHunkCommand(sublime_plugin.TextCommand):
             # Merge not valid
             return
 
-        hunk.merge(diff.left_view, diff.right_view, edit, direction)
+        hunk.merge(self.view, edit, direction)
+
 
 class DiffViewUncommitted(DiffView):
     """Command to display a simple diff of uncommitted changes."""
