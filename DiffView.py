@@ -213,6 +213,7 @@ class DiffView(sublime_plugin.WindowCommand):
                 target=highlight_when_ready,
                 args=(view, highlight_fn))
             t.start()
+            return view
 
         right_view = open_preview(new_filespec, self.rhs_group, hunk.file_diff.add_new_regions)
         left_view = open_preview(old_filespec, self.lhs_group, hunk.file_diff.add_old_regions)
