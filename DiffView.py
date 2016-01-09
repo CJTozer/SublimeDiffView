@@ -202,27 +202,20 @@ class DiffView(sublime_plugin.WindowCommand):
                 time.sleep(0.1)
             highlight_fn(view, self.styles)
 
-        right_view = self.window.open_file(
-            new_filespec,
-            flags=sublime.TRANSIENT |
-            sublime.ENCODED_POSITION |
-            sublime.FORCE_GROUP,
-            group=self.rhs_group)
-        t = threading.Thread(
-            target=highlight_when_ready,
-            args=(right_view, hunk.file_diff.add_new_regions))
-        t.start()
+        def open_preview(filespec, group, highlight_fn):
+            view = self.window.open_file(
+                filespec,
+                flags=sublime.TRANSIENT |
+                sublime.ENCODED_POSITION |
+                sublime.FORCE_GROUP,
+                group=group)
+            t = threading.Thread(
+                target=highlight_when_ready,
+                args=(view, highlight_fn))
+            t.start()
 
-        left_view = self.window.open_file(
-            old_filespec,
-            flags=sublime.TRANSIENT |
-            sublime.ENCODED_POSITION |
-            sublime.FORCE_GROUP,
-            group=self.lhs_group)
-        t = threading.Thread(
-            target=highlight_when_ready,
-            args=(left_view, hunk.file_diff.add_old_regions))
-        t.start()
+        right_view = open_preview(new_filespec, self.rhs_group, hunk.file_diff.add_new_regions)
+        left_view = open_preview(old_filespec, self.lhs_group, hunk.file_diff.add_old_regions)
 
         self.window.focus_group(0)
         if self.view_style == "quick_panel":
