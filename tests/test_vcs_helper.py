@@ -34,7 +34,7 @@ class test_VCSHelper(TestCase):
         ]
         helper = VCSHelper.get_helper('.')
         self.assertIsInstance(helper, GitHelper)
-        self.assertEquals(helper.git_base, '/some/magic/dir')
+        self.assertEquals(helper.repo_base, '/some/magic/dir')
 
     @patch('subprocess.Popen')
     def test_get_helper_svn(self, mocked_Popen):
@@ -46,7 +46,7 @@ class test_VCSHelper(TestCase):
         ]
         helper = VCSHelper.get_helper('.')
         self.assertIsInstance(helper, SVNHelper)
-        self.assertEquals(helper.svn_base, '/dir/to/svn')
+        self.assertEquals(helper.repo_base, '/dir/to/svn')
 
 
 class DummyProcess():
