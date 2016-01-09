@@ -14,8 +14,16 @@ class VCSHelper(object):
     def get_helper(cls, cwd):
         """Get the correct VCS helper for this codebase.
 
+        Checks for Git first, then Subversion.
+
         Args:
             cwd: The current directory.  Not necessarily the base of the VCS.
+
+        Returns:
+            A `GitHelper` or `SVNHelper` if in a repo.
+
+        Raises:
+            `NoVCSError` if the `cwd` isn't under version control.
         """
         # Check for a Git repo first
         try:
@@ -45,8 +53,7 @@ class VCSHelper(object):
                 if match:
                     return SVNHelper(match.group(1))
                 else:
-                    print("Couldn't find SVN repo in:\n{}".format(
-                        out.decode('utf-8')))
+                    print("Couldn't find SVN repo in:\n{}".format(out.decode('utf-8')))
         except:
             pass
 
@@ -62,20 +69,39 @@ class VCSHelper(object):
     def get_file_versions(self, diff_args):
         """Get both the versions of the file.
 
-        This returns the 'version' for the old and new file, as it needs to be
-        passed in to `get_file_content`.
-
         An empty string means that the file is the working copy version.
 
         Args:
             diff_args: The diff arguments.
+
+        Returns:
+            A tuple with the 'version' for the old and new file, suitable for passing in to `get_file_content`.
         """
         pass
 
     @abstractmethod
     def get_file_content(self, filename, version):
-        """Get the contents of a file at a specific version."""
+        """Get the contents of a file at a specific version.
+
+        Args:
+            filename: The file.
+            version: The version.
+
+        Returns:
+            A string with the file's contents at the specified version.
+        """
         pass
+
+    def vcs_command(self, args):
+        """Wrapper to run a VCS command."""
+        # Using shell, just pass a string to subprocess.
+        p = subprocess.Popen(
+            " ".join([self.vcs] + args),
+            stdout=subprocess.PIPE,
+            shell=True,
+            cwd=self.repo_base)
+        out, err = p.communicate()
+        return out.decode('utf-8')
 
 
 class NoVCSError(Exception):
@@ -91,26 +117,22 @@ class GitHelper(VCSHelper):
     """VCSHelper implementation for Git repositories."""
 
     def __init__(self, repo_base):
-        self.git_base = repo_base
+        self.repo_base = repo_base
         self.got_changed_files = False
+        self.vcs = 'git'
 
     def get_changed_files(self, diff_args):
         files = []
         if not self.got_changed_files:
-            diff_stat = self.git_command(['diff', '--stat', diff_args])
+            diff_stat = self.vcs_command(['diff', '--stat', diff_args])
             for line in diff_stat.split('\n'):
                 match = self.STAT_CHANGED_FILE.match(line)
                 if match:
                     filename = match.group(1)
-                    abs_filename = os.path.join(self.git_base, filename)
+                    abs_filename = os.path.join(self.repo_base, filename)
 
                     # Get the diff text for this file.
-                    diff_text = self.git_command(
-                        ['diff',
-                         diff_args,
-                         '-U0',
-                         '--',
-                         filename])
+                    diff_text = self.vcs_command(['diff', diff_args, '-U0', '--', filename])
                     files.append(FileDiff(filename, abs_filename, diff_text))
         self.got_changed_files = True
         return files
@@ -119,10 +141,7 @@ class GitHelper(VCSHelper):
         # Merge base diff
         match = self.DIFF_MATCH_MERGE_BASE.match(diff_args)
         if match:
-            merge_base = self.git_command(
-                ['merge_base',
-                 match.group(1),
-                 match.group(2)])
+            merge_base = self.vcs_command(['merge_base', match.group(1), match.group(2)])
             return (merge_base, match.group(2))
 
         # Normal diff
@@ -140,20 +159,10 @@ class GitHelper(VCSHelper):
     def get_file_content(self, filename, version):
         git_args = ['show', '{}:{}'.format(version, filename)]
         try:
-            content = self.git_command(git_args)
+            content = self.vcs_command(git_args)
         except UnicodeDecodeError:
             content = "Unable to decode file..."
         return content
-
-    def git_command(self, args):
-        """Wrapper to run a Git command."""
-        # Using shell, just pass a string to subprocess.
-        p = subprocess.Popen(" ".join(['git'] + args),
-                             stdout=subprocess.PIPE,
-                             shell=True,
-                             cwd=self.git_base)
-        out, err = p.communicate()
-        return out.decode('utf-8')
 
 
 class SVNHelper(VCSHelper):
@@ -165,42 +174,36 @@ class SVNHelper(VCSHelper):
     """VCSHelper implementation for SVN repositories."""
 
     def __init__(self, repo_base):
-        self.svn_base = repo_base
+        self.repo_base = repo_base
         self.got_changed_files = False
+        self.vcs = 'svn'
 
     def get_changed_files(self, diff_args):
         files = []
         if not self.got_changed_files:
             if self.DUAL_REV_MATCH.match(diff_args):
                 # Comparison between 2 revisions
-                status_text = self.svn_command(
-                    ['diff', diff_args, '--summarize'])
+                status_text = self.vcs_command(['diff', diff_args, '--summarize'])
             elif self.REV_MATCH.match(diff_args):
                 # Can only compare this against HEAD
-                status_text = self.svn_command(
-                    ['diff', diff_args + ":HEAD", '--summarize'])
+                status_text = self.vcs_command(['diff', diff_args + ':HEAD', '--summarize'])
             elif self.COMMIT_MATCH.match(diff_args):
                 # Commit match
-                status_text = self.svn_command(
-                    ['diff', diff_args, '--summarize'])
+                status_text = self.vcs_command(['diff', diff_args, '--summarize'])
             else:
                 # Show uncommitted changes
-                status_text = self.svn_command(['status', diff_args])
+                status_text = self.vcs_command(['status', diff_args])
             for line in status_text.split('\n'):
                 match = self.STATUS_CHANGED_FILE.match(line)
                 if match:
                     filename = match.group(1)
-                    abs_filename = os.path.join(self.svn_base, filename)
+                    abs_filename = os.path.join(self.repo_base, filename)
 
                     # Don't add directories to the list
                     if not os.path.isdir(abs_filename):
                         # Get the diff text for this file.
-                        diff_text = self.svn_command(
-                            ['diff', diff_args, filename])
-                        files.append(FileDiff(
-                            filename,
-                            abs_filename,
-                            diff_text))
+                        diff_text = self.vcs_command(['diff', diff_args, filename])
+                        files.append(FileDiff(filename, abs_filename, diff_text))
 
         self.got_changed_files = True
         return files
@@ -209,9 +212,7 @@ class SVNHelper(VCSHelper):
         # Diff between two versions?
         match = self.DUAL_REV_MATCH.match(diff_args)
         if match:
-            return (
-                '-r {}'.format(match.group(1)),
-                '-r {}'.format(match.group(2)))
+            return ('-r {}'.format(match.group(1)), '-r {}'.format(match.group(2)))
 
         # Diff HEAD against a specific revision?
         match = self.REV_MATCH.match(diff_args)
@@ -230,17 +231,7 @@ class SVNHelper(VCSHelper):
 
     def get_file_content(self, filename, version):
         try:
-            content = self.svn_command(['cat', version, filename])
+            content = self.vcs_command(['cat', version, filename])
         except UnicodeDecodeError:
             content = "Unable to decode file..."
         return content
-
-    def svn_command(self, args):
-        """Wrapper to run an SVN command."""
-        # Using shell, just pass a string to subprocess.
-        p = subprocess.Popen(" ".join(['svn'] + args),
-                             stdout=subprocess.PIPE,
-                             shell=True,
-                             cwd=self.svn_base)
-        out, err = p.communicate()
-        return out.decode('utf-8')

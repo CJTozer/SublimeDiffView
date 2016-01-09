@@ -29,8 +29,7 @@ class DiffView(sublime_plugin.WindowCommand):
             "ADD": self.settings.get("add_highlight_style", "support.class"),
             "MOD": self.settings.get("mod_highlight_style", "string"),
             "DEL": self.settings.get("del_highlight_style", "invalid"),
-            "LIST_SEL": self.settings.get(
-                "list_sel_highlight_style", "comment")}
+            "LIST_SEL": self.settings.get("list_sel_highlight_style", "comment")}
 
         # Set up the groups
         self.list_group = 0
@@ -56,11 +55,8 @@ class DiffView(sublime_plugin.WindowCommand):
             self.lhs_group = 1
             self.rhs_group = 2
         else:
-            sublime.error_message(
-                "Invalid value '{}'' for 'view_style'".format(
-                    self.view_style))
-            raise ValueError("Invalid 'view_style': '{}'".format(
-                self.view_style))
+            sublime.error_message("Invalid value '{}'' for 'view_style'".format(self.view_style))
+            raise ValueError("Invalid 'view_style': '{}'".format(self.view_style))
 
     def run(self):
         self._prepare()
@@ -87,9 +83,7 @@ class DiffView(sublime_plugin.WindowCommand):
             self.parser = DiffParser(self.diff_args, cwd)
         except NoVCSError:
             # No changes; say so
-            sublime.message_dialog(
-                "This file does not appear to be under version control " +
-                "(Git or SVN).")
+            sublime.message_dialog("This file does not appear to be under version control (Git or SVN).")
             return
 
         if not self.parser.changed_hunks:
@@ -123,8 +117,7 @@ class DiffView(sublime_plugin.WindowCommand):
             # Put the hunks list in the top panel
             self.changes_list_file = tempfile.mkstemp()[1]
             with open(self.changes_list_file, 'w') as f:
-                changes_list = "\n".join(
-                    [h.oneline_description for h in self.parser.changed_hunks])
+                changes_list = "\n".join([h.oneline_description for h in self.parser.changed_hunks])
                 f.write(changes_list)
             self.changes_list_view = self.window.open_file(
                 self.changes_list_file,
@@ -139,8 +132,7 @@ class DiffView(sublime_plugin.WindowCommand):
                 while view.is_loading():
                     time.sleep(0.1)
 
-                # Force a change in position - so the selection change event
-                # always triggers.
+                # Force a change in position - so the selection change event always triggers.
                 view.sel().clear()
                 view.sel().add(sublime.Region(1, 1))
                 view.run_command(
@@ -155,10 +147,7 @@ class DiffView(sublime_plugin.WindowCommand):
                 self)
 
             # Choose the last selected change, when the view's ready
-            t = threading.Thread(
-                target=select_latest_diff_when_ready,
-                args=(self.changes_list_view,))
-            t.start()
+            threading.Thread(target=select_latest_diff_when_ready, args=(self.changes_list_view,)).start()
 
     def show_hunk_diff(self, hunk_index):
         """Open the location of the selected hunk.
@@ -209,14 +198,11 @@ class DiffView(sublime_plugin.WindowCommand):
                 sublime.ENCODED_POSITION |
                 sublime.FORCE_GROUP,
                 group=group)
-            t = threading.Thread(
-                target=highlight_when_ready,
-                args=(view, highlight_fn))
-            t.start()
+            threading.Thread(target=highlight_when_ready, args=(view, highlight_fn)).start()
             return view
 
-        right_view = open_preview(new_filespec, self.rhs_group, hunk.file_diff.add_new_regions)
-        left_view = open_preview(old_filespec, self.lhs_group, hunk.file_diff.add_old_regions)
+        self.right_view = open_preview(new_filespec, self.rhs_group, hunk.file_diff.add_new_regions)
+        self.left_view = open_preview(old_filespec, self.lhs_group, hunk.file_diff.add_old_regions)
 
         self.window.focus_group(0)
         if self.view_style == "quick_panel":
@@ -225,16 +211,13 @@ class DiffView(sublime_plugin.WindowCommand):
 
     def reset_window(self):
         """Reset the window to its original state."""
-        # Return to the original layout/view/selection
         if self.view_style == "persistent_list":
             self.changes_list_view.close()
         self.window.set_layout(self.orig_layout)
         self.window.focus_view(self.orig_view)
         self.orig_view.sel().clear()
         self.orig_view.sel().add(self.orig_pos)
-        self.orig_view.set_viewport_position(
-            self.orig_viewport,
-            animate=False)
+        self.orig_view.set_viewport_position(self.orig_viewport, animate=False)
 
         # Stop listening for events
         ViewFinder.instance().stop()
@@ -271,8 +254,7 @@ class DiffShowSelected(sublime_plugin.WindowCommand):
     """Show the change that's curently selected by this view."""
     def run(self):
         if hasattr(self.window, 'last_diff'):
-            self.window.last_diff.show_hunk_diff(
-                DiffViewEventListner.instance().current_row)
+            self.window.last_diff.show_hunk_diff(DiffViewEventListner.instance().current_row)
 
 
 class DiffViewUncommitted(DiffView):
@@ -336,8 +318,7 @@ class DiffViewEventListner(sublime_plugin.EventListener):
                 flags=Constants.SELECTED_CHANGE_FLAGS)
 
     def on_query_context(self, view, key, operator, operand, match_all):
-        """Context queries mean someone is trying to work out whether to
-        override key bindings.
+        """Context queries mean someone is trying to work out whether to override key bindings.
 
         The bindings that are overridden are as follows:
         - escape -> "cancel_diff" when a diff is running
