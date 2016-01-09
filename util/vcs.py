@@ -7,6 +7,11 @@ from ..parser.file_diff import FileDiff
 
 
 class VCSHelper(object):
+    """Abstract base class for helping with VCS operations.
+
+    Given a directory, calling `VCSHelper.get_helper` will get an appropriate helper for the VCS system used by that
+    directory.
+    """
     __metaclass__ = ABCMeta
     SVN_BASE_MATCH = re.compile('Root Path:\s*([\:\\\\/\w\.\-]*)')
 
@@ -62,7 +67,14 @@ class VCSHelper(object):
 
     @abstractmethod
     def get_changed_files(self, diff_args):
-        """Get a list of changed files."""
+        """Get a list of changed files.
+
+        Args:
+            diff_args: The diff args that define which files have changed.
+
+        Returns:
+            An array of `FileDiff` objects representing the changed files.
+        """
         pass
 
     @abstractmethod
@@ -93,7 +105,14 @@ class VCSHelper(object):
         pass
 
     def vcs_command(self, args):
-        """Wrapper to run a VCS command."""
+        """Wrapper to run a VCS command.
+
+        Args:
+            args: The args for the VCS command.
+
+        Returns:
+            The command's output, as a string.
+        """
         # Using shell, just pass a string to subprocess.
         p = subprocess.Popen(
             " ".join([self.vcs] + args),
@@ -110,13 +129,18 @@ class NoVCSError(Exception):
 
 
 class GitHelper(VCSHelper):
+    """VCSHelper implementation for Git repositories."""
 
     STAT_CHANGED_FILE = re.compile('\s*([\w\.\-\/]+)\s*\|')
     DIFF_MATCH_MERGE_BASE = re.compile('(.*)\.\.\.(.*)')
     DIFF_MATCH = re.compile('(.*)\.\.(.*)')
-    """VCSHelper implementation for Git repositories."""
 
     def __init__(self, repo_base):
+        """Constructor
+
+        Args:
+            repo_base: The base directory of the repo.
+        """
         self.repo_base = repo_base
         self.got_changed_files = False
         self.vcs = 'git'
@@ -166,12 +190,12 @@ class GitHelper(VCSHelper):
 
 
 class SVNHelper(VCSHelper):
+    """VCSHelper implementation for SVN repositories."""
 
     STATUS_CHANGED_FILE = re.compile('\s*[AM][\+CMLSKOTB\s]*([\w\.\-\/\\\\]+)')
     DUAL_REV_MATCH = re.compile('-r *(\d+):(\d+)')
     REV_MATCH = re.compile('-r *(\d+)')
     COMMIT_MATCH = re.compile('-c *(\d+)')
-    """VCSHelper implementation for SVN repositories."""
 
     def __init__(self, repo_base):
         self.repo_base = repo_base

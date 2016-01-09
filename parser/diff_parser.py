@@ -5,13 +5,18 @@ from ..util.vcs import VCSHelper
 
 
 class DiffParser(object):
-    """Representation of the entire diff.
+    """Class for handling understanding and parsing a specific diff.
 
-    Args:
-        diff_args: The arguments to be used for the Git diff.
-        cwd: The working directory.
+    This class represents the entire diff.
     """
+
     def __init__(self, diff_args, cwd):
+        """Constructor.
+
+        Args:
+            diff_args: The arguments to be used for the Git diff.
+            cwd: The working directory.
+        """
         self.diff_args = diff_args
         self.cwd = cwd
         self.temp_dir = tempfile.mkdtemp()

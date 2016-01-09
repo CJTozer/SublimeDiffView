@@ -6,6 +6,10 @@ class ViewFinder(sublime_plugin.EventListener):
     _instance = None
 
     def __init__(self):
+        """Constructor.
+
+        Do not call directly - use `ViewFinder.instance()` instead.
+        """
         self.__class__._instance = self
         self._listening = False
 

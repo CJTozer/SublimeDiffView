@@ -5,18 +5,19 @@ from .diff_region import DiffRegion
 
 
 class HunkDiff(object):
+    """Representation of a single 'hunk' from a Git diff."""
 
     NEWLINE_MATCH = re.compile('\r?\n')
     ADD_LINE_MATCH = re.compile('^\+(.*)')
     DEL_LINE_MATCH = re.compile('^\-(.*)')
-    """Representation of a single 'hunk' from a Git diff.
-
-    Args:
-        file_diff: The parent `FileDiff` object.
-        match: The match parts of the hunk header.
-    """
 
     def __init__(self, file_diff, match):
+        """Constructor.
+
+        Args:
+            file_diff: The parent `FileDiff` object.
+            match: The match parts of the hunk header.
+        """
         self.file_diff = file_diff
         self.old_regions = []
         self.new_regions = []
@@ -120,14 +121,22 @@ class HunkDiff(object):
         return (old_filespec, new_filespec)
 
     def get_old_regions(self, view):
-        """Create a `sublime.Region` for each (old) part of this hunk."""
+        """Create a `sublime.Region` for each (old) part of this hunk.
+
+        Args:
+            view: The view to get the regions for.
+        """
         return [sublime.Region(
             view.text_point(r.start_line - 1, r.start_col),
             view.text_point(r.end_line - 1, r.end_col))
             for r in self.old_regions]
 
     def get_new_regions(self, view):
-        """Create a `sublime.Region` for each (new) part of this hunk."""
+        """Create a `sublime.Region` for each (new) part of this hunk.
+
+        Args:
+            view: The view to get the regions for.
+        """
         return [sublime.Region(
             view.text_point(r.start_line - 1, r.start_col),
             view.text_point(r.end_line - 1, r.end_col))

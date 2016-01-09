@@ -12,12 +12,11 @@ from .parser.diff_parser import DiffParser
 
 
 class DiffView(sublime_plugin.WindowCommand):
-
-    diff_args = ''
     """Main Sublime command for running a diff.
 
     Asks for input for what to diff against; a Git SHA/branch/tag.
     """
+    diff_args = ''
 
     def _prepare(self):
         """Some preparation common to all subclasses."""
@@ -265,13 +264,16 @@ class DiffViewUncommitted(DiffView):
 
 
 class ShowDiffListCommand(sublime_plugin.TextCommand):
-    """Command to show the diff list.
+    """Command to show the diff list."""
 
-    Args:
-        changes_list: The text of the changes list.
-        last_selected: The last selected change (zero indexed).
-    """
     def run(self, edit, last_selected, style):
+        """Entry point for running the command.
+
+        Args:
+            edit: The edit for this `TextCommand`.
+            last_selected: The last selected change (zero indexed).
+            style: The style to use for the selected line.
+        """
         # Move cursor to the last selected diff
         self.view.sel().clear()
         pos = self.view.text_point(last_selected, 0)
@@ -287,10 +289,11 @@ class ShowDiffListCommand(sublime_plugin.TextCommand):
 
 
 class DiffViewEventListner(sublime_plugin.EventListener):
+    """Helper class for catching events during a diff."""
     _instance = None
 
-    """Helper class for catching events during a diff."""
     def __init__(self):
+        """Constructor."""
         self.__class__._instance = self
         self._listening = False
         self.current_row = -1
@@ -299,6 +302,9 @@ class DiffViewEventListner(sublime_plugin.EventListener):
         """Called when a selection has been modified.
 
         Only interested if this is the change list view.
+
+        Args:
+            view: The view that's changed selection.
         """
         if self._listening and view == self.view:
             current_selection = view.sel()[0]
