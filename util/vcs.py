@@ -165,8 +165,11 @@ class GitHelper(VCSHelper):
         # Merge base diff
         match = self.DIFF_MATCH_MERGE_BASE.match(diff_args)
         if match:
-            merge_base = self.vcs_command(['merge_base', match.group(1), match.group(2)])
-            return (merge_base, match.group(2))
+            base1 = match.group(1) or 'HEAD'
+            base2 = match.group(2) or 'HEAD'
+            merge_base = self.vcs_command(['merge-base', base1, base2])
+            # merge_base comes back with a newline on the end - strip it.
+            return (merge_base.rstrip(), base2)
 
         # Normal diff
         match = self.DIFF_MATCH.match(diff_args)
