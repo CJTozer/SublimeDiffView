@@ -6,6 +6,10 @@ class ViewFinder(sublime_plugin.EventListener):
     _instance = None
 
     def __init__(self):
+        """Constructor.
+
+        Do not call directly - use `ViewFinder.instance()` instead.
+        """
         self.__class__._instance = self
         self._listening = False
 
@@ -13,7 +17,8 @@ class ViewFinder(sublime_plugin.EventListener):
         """Call the provided callback when a widget view is created.
 
         Args:
-            view: The view to listen for widget creation in."""
+            view: The view to listen for widget creation in.
+        """
         if self._listening and view.settings().get('is_widget'):
             self._listening = False
             self.cb(view)
@@ -29,7 +34,8 @@ class ViewFinder(sublime_plugin.EventListener):
         """Start listening for widget creation.
 
         Args:
-            cb: The callback to call when a widget is created."""
+            cb: The callback to call when a widget is created.
+        """
         self.cb = cb
         self._listening = True
 

@@ -1,7 +1,7 @@
 # DiffView for Sublime Text 3
 *Git and SVN Diff Viewer for Sublime Text 3*
 
-[![Build Status](https://travis-ci.org/CJTozer/SublimeDiffView.svg)](https://travis-ci.org/CJTozer/SublimeDiffView)
+[![Build Status](https://travis-ci.org/CJTozer/SublimeDiffView.svg?branch=develop)](https://travis-ci.org/CJTozer/SublimeDiffView)
 [![Codacy Badge](https://api.codacy.com/project/badge/grade/3293806d0ed84519b943529ca22414a6)](https://www.codacy.com/app/christopherjtozer/SublimeDiffView)
 [![Join the chat at https://gitter.im/CJTozer/SublimeDiffView](https://badges.gitter.im/CJTozer/SublimeDiffView.svg)](https://gitter.im/CJTozer/SublimeDiffView?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 

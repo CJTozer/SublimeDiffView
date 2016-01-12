@@ -42,7 +42,7 @@ class test_GitHelper(TestCase):
             git_helper.get_file_versions('branch_a...branch_b'),
             ('merge_base_commit', 'branch_b'))
         mocked_Popen.assert_called_with(
-            'git merge_base branch_a branch_b',
+            'git merge-base branch_a branch_b',
             stdout=subprocess.PIPE,
             shell=True,
             cwd='/repo/base')
@@ -50,9 +50,9 @@ class test_GitHelper(TestCase):
         self.dummy_process.ret_vals = [(b'merge_base_commit', b'')]
         self.assertEquals(
             git_helper.get_file_versions('branch_a...'),
-            ('merge_base_commit', ''))
+            ('merge_base_commit', 'HEAD'))
         mocked_Popen.assert_called_with(
-            'git merge_base branch_a ',
+            'git merge-base branch_a HEAD',
             stdout=subprocess.PIPE,
             shell=True,
             cwd='/repo/base')
@@ -62,7 +62,7 @@ class test_GitHelper(TestCase):
             git_helper.get_file_versions('...branch_b'),
             ('merge_base_commit', 'branch_b'))
         mocked_Popen.assert_called_with(
-            'git merge_base  branch_b',
+            'git merge-base HEAD branch_b',
             stdout=subprocess.PIPE,
             shell=True,
             cwd='/repo/base')
