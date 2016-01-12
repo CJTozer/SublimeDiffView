@@ -1,9 +1,12 @@
 # DiffView for Sublime Text 3
 *Git and SVN Diff Viewer for Sublime Text 3*
 
-[![Build Status](https://travis-ci.org/CJTozer/SublimeDiffView.svg?branch=develop)](https://travis-ci.org/CJTozer/SublimeDiffView)
-[![Codacy Badge](https://api.codacy.com/project/badge/grade/3293806d0ed84519b943529ca22414a6)](https://www.codacy.com/app/christopherjtozer/SublimeDiffView)
-[![Join the chat at https://gitter.im/CJTozer/SublimeDiffView](https://badges.gitter.im/CJTozer/SublimeDiffView.svg)](https://gitter.im/CJTozer/SublimeDiffView?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Travis](https://img.shields.io/travis/CJTozer/SublimeDiffView/develop.svg?style=flat-square)](https://travis-ci.org/CJTozer/SublimeDiffView)
+[![Release](https://img.shields.io/github/release/CJTozer/SublimeDiffView.svg?style=flat-square)](https://github.com/CJTozer/SublimeDiffView/releases)
+[![Installs](https://img.shields.io/packagecontrol/dt/DiffView.svg?style=flat-square)](https://packagecontrol.io/packages/DiffView)
+[![The MIT License](https://img.shields.io/badge/license-MIT-orange.svg?style=flat-square)](http://opensource.org/licenses/MIT)
+[![Codacy](https://img.shields.io/codacy/3293806d0ed84519b943529ca22414a6/develop.svg?style=flat-square)](https://www.codacy.com/app/christopherjtozer/SublimeDiffView)
+[![Gitter](https://img.shields.io/gitter/room/CJTozer/SublimeDiffView.svg?style=flat-square)](https://gitter.im/CJTozer/SublimeDiffView)
 
 ## Features
 * Side-by-side view with differences highlighted
