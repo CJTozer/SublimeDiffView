@@ -3,7 +3,7 @@
 
 [![Travis](https://img.shields.io/travis/CJTozer/SublimeDiffView/develop.svg?style=flat-square)](https://travis-ci.org/CJTozer/SublimeDiffView)
 [![Release](https://img.shields.io/github/release/CJTozer/SublimeDiffView.svg?style=flat-square)](https://github.com/CJTozer/SublimeDiffView/releases)
-[![Installs](https://img.shields.io/packagecontrol/dt/DiffView.svg?style=flat-square)](https://packagecontrol.io/packages/DiffView)
+[![Installs](https://img.shields.io/packagecontrol/dt/DiffView.svg?style=flat-square&label=installs)](https://packagecontrol.io/packages/DiffView)
 [![The MIT License](https://img.shields.io/badge/license-MIT-orange.svg?style=flat-square)](http://opensource.org/licenses/MIT)
 [![Codacy](https://img.shields.io/codacy/3293806d0ed84519b943529ca22414a6/develop.svg?style=flat-square)](https://www.codacy.com/app/christopherjtozer/SublimeDiffView)
 [![Gitter](https://img.shields.io/gitter/room/CJTozer/SublimeDiffView.svg?style=flat-square)](https://gitter.im/CJTozer/SublimeDiffView)
