@@ -17,13 +17,13 @@
 
 ## Screenshots
 
+### With 'Persistent List' view style (default)
+
+![Screenshot](https://raw.githubusercontent.com/CJTozer/SublimeDiffView/master/img/screen_2.png "Git diff with persistent list")
+
 ### With 'Quick Panel' view style
 
 ![Screenshot](https://raw.githubusercontent.com/CJTozer/SublimeDiffView/master/img/screen_1.png "Git diff with quick panel")
-
-### With 'Persistent List' view style
-
-![Screenshot](https://raw.githubusercontent.com/CJTozer/SublimeDiffView/master/img/screen_2.png "Git diff with persistent list")
 
 ## Installation
 

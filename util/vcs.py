@@ -131,7 +131,7 @@ class NoVCSError(Exception):
 class GitHelper(VCSHelper):
     """VCSHelper implementation for Git repositories."""
 
-    STAT_CHANGED_FILE = re.compile('\s*([\w\.\-\/]+)\s*\|')
+    STAT_CHANGED_FILE = re.compile('\s*([\w\.\-\/ ]+)\s*\|')
     DIFF_MATCH_MERGE_BASE = re.compile('(.*)\.\.\.(.*)')
     DIFF_MATCH = re.compile('(.*)\.\.(.*)')
 
@@ -152,11 +152,16 @@ class GitHelper(VCSHelper):
             for line in diff_stat.split('\n'):
                 match = self.STAT_CHANGED_FILE.match(line)
                 if match:
-                    filename = match.group(1)
+                    filename = match.group(1).rstrip()
                     abs_filename = os.path.join(self.repo_base, filename)
 
                     # Get the diff text for this file.
-                    diff_text = self.vcs_command(['diff', diff_args, '-U0', '--', filename])
+                    diff_text = self.vcs_command(
+                        ['diff',
+                         diff_args,
+                         '-U0',
+                         '--',
+                         '"{}"'.format(filename)])
                     files.append(FileDiff(filename, abs_filename, diff_text))
         self.got_changed_files = True
         return files
@@ -184,7 +189,7 @@ class GitHelper(VCSHelper):
         return ('HEAD', '')
 
     def get_file_content(self, filename, version):
-        git_args = ['show', '{}:{}'.format(version, filename)]
+        git_args = ['show', '{}:"{}"'.format(version, filename)]
         try:
             content = self.vcs_command(git_args)
         except UnicodeDecodeError:
@@ -195,7 +200,7 @@ class GitHelper(VCSHelper):
 class SVNHelper(VCSHelper):
     """VCSHelper implementation for SVN repositories."""
 
-    STATUS_CHANGED_FILE = re.compile('\s*[AM][\+CMLSKOTB\s]*([\w\.\-\/\\\\]+)')
+    STATUS_CHANGED_FILE = re.compile('\s*[AM][\+CMLSKOTB\s]*([\w\.\-\/\\\\ ]+)')
     DUAL_REV_MATCH = re.compile('-r *(\d+):(\d+)')
     REV_MATCH = re.compile('-r *(\d+)')
     COMMIT_MATCH = re.compile('-c *(\d+)')
@@ -223,13 +228,16 @@ class SVNHelper(VCSHelper):
             for line in status_text.split('\n'):
                 match = self.STATUS_CHANGED_FILE.match(line)
                 if match:
-                    filename = match.group(1)
+                    filename = match.group(1).rstrip()
                     abs_filename = os.path.join(self.repo_base, filename)
 
                     # Don't add directories to the list
                     if not os.path.isdir(abs_filename):
                         # Get the diff text for this file.
-                        diff_text = self.vcs_command(['diff', diff_args, filename])
+                        diff_text = self.vcs_command(
+                            ['diff',
+                             diff_args,
+                             '"{}"'.format(filename)])
                         files.append(FileDiff(filename, abs_filename, diff_text))
 
         self.got_changed_files = True
@@ -258,7 +266,7 @@ class SVNHelper(VCSHelper):
 
     def get_file_content(self, filename, version):
         try:
-            content = self.vcs_command(['cat', version, filename])
+            content = self.vcs_command(['cat', version, '"{}"'.format(filename)])
         except UnicodeDecodeError:
             content = "Unable to decode file..."
         return content
