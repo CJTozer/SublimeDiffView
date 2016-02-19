@@ -148,7 +148,7 @@ class GitHelper(VCSHelper):
     def get_changed_files(self, diff_args):
         files = []
         if not self.got_changed_files:
-            diff_stat = self.vcs_command(['diff', '--stat', diff_args])
+            diff_stat = self.vcs_command(['diff', '--stat=9999', diff_args])
             for line in diff_stat.split('\n'):
                 match = self.STAT_CHANGED_FILE.match(line)
                 if match:
