@@ -115,7 +115,7 @@ Each of the highlihgted regions' styles can be configured in the settings.  Thes
 
 Thanks to the following for their contributions:
 
-* @3v1n0 for Bazaar support
+* [@3v1n0](https://github.com/3v1n0) for Bazaar support
 
 ## Feedback
 
