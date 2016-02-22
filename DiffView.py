@@ -86,7 +86,7 @@ class DiffView(sublime_plugin.WindowCommand):
             self.parser = DiffParser(self.diff_args, cwd)
         except NoVCSError:
             # No changes; say so
-            sublime.message_dialog("This file does not appear to be under version control (Git or SVN).")
+            sublime.message_dialog("This file does not appear to be under version control (Git, SVN or Bazaar).")
             return
 
         if not self.parser.changed_hunks:
