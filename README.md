@@ -80,7 +80,7 @@
 * `-r1..3 xxx`
     * Show changes between revision 1 and revision 3 for branch xxx
 * `-c2`
-    * Show the changes introduced by revision 2 (equivalent to -r1..2)
+    * Show the changes introduced by revision 2 (equivalent to `-r1..2`)
 * `-r-2..`
     * Show the changes between the current revision and the previous revision (equivalent to `-c-1` and `-r-2..-1`)
 * `FILE`
