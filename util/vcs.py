@@ -62,6 +62,20 @@ class VCSHelper(object):
         except:
             pass
 
+        try:
+        # Now check for Bzr
+            p = subprocess.Popen(
+                'bzr root',
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                shell=True,
+                cwd=cwd)
+            out, err = p.communicate()
+            if not err:
+                return BzrHelper(out.decode('utf-8').rstrip())
+        except:
+            pass
+
         # No VCS found
         raise NoVCSError
 
@@ -270,3 +284,176 @@ class SVNHelper(VCSHelper):
         except UnicodeDecodeError:
             content = "Unable to decode file..."
         return content
+
+
+class BzrHelper(VCSHelper):
+    """VCSHelper implementation for Bzr repositories."""
+
+    STAT_CHANGED_FILE = re.compile('\s*([\w\.\-\/ ]+)\s*\|')
+    DIFF_MATCH = re.compile('(.*)\.\.(.*)')
+
+    def __init__(self, repo_base):
+        """Constructor
+
+        Args:
+            repo_base: The base directory of the repo.
+        """
+        self.repo_base = repo_base
+        self.got_changed_files = False
+        self.vcs = 'bzr'
+
+    def get_changed_files(self, diff_args):
+        files = []
+        if not self.got_changed_files:
+            diff = self.vcs_command(['diff', diff_args])
+            diff_stat = str(self.DiffStat(diff))
+            for line in diff_stat.split('\n'):
+                match = self.STAT_CHANGED_FILE.match(line)
+                if match:
+                    filename = match.group(1).rstrip()
+                    abs_filename = os.path.join(self.repo_base, filename)
+
+                    # Get the diff text for this file.
+                    diff_text = self.vcs_command(
+                        ['diff',
+                         diff_args,
+                         '"{}"'.format(filename)])
+                    files.append(FileDiff(filename, abs_filename, diff_text))
+        self.got_changed_files = True
+        return files
+
+    def get_file_versions(self, diff_args):
+        # Normal diff
+        match = self.DIFF_MATCH.match(diff_args)
+        if match:
+            return (match.group(1), match.group(2))
+
+        if diff_args != '':
+            # WC comparison
+            return (diff_args, '')
+
+        # Last revision to WC comparison
+        return ('last:1', '')
+
+    def get_file_content(self, filename, version):
+        bzr_args = ['cat', '-r {}'.format(version), filename]
+        try:
+            content = self.vcs_command(bzr_args)
+        except UnicodeDecodeError:
+            content = "Unable to decode file..."
+        return content
+
+    class DiffStat(object):
+        def __init__(self, lines):
+            self.maxname = 0
+            self.maxtotal = 0
+            self.total_adds = 0
+            self.total_removes = 0
+            self.stats = {}
+            self.files = []
+            self.__parse(lines.split('\n'))
+
+        def __parse(self, lines):
+            adds = 0
+            removes = 0
+            current = None
+
+            # This regex is supposed to take into account the timestamp at the end
+            # of the filename, so we can exclude it when outputting the filename
+            filename_re = re.compile(r'^(---|\+\+\+) (.*?)\s+[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2} \+[0-9]{4}$')
+
+            for line in lines:
+                if line.startswith('+') and not line.startswith('+++ '):
+                    adds += 1
+                elif line.startswith('-') and not line.startswith('--- '):
+                    removes += 1
+                elif line.startswith('=== '):
+                    self.__add_stats(current, adds, removes)
+
+                    adds = 0
+                    removes = 0
+                    context = 0
+                    current = None
+                else:
+                    match = filename_re.match(line)
+
+                    if match and \
+                    ((match.group(1) == '---' and current is None) or \
+                        (match.group(1) == '+++' and current == '/dev/null')):
+                        current = match.group(2)
+
+            self.__add_stats(current, adds, removes)
+
+        class Filestat:
+            def __init__(self):
+                self.adds = 0
+                self.removes = 0
+                self.total = 0
+
+        def __add_stats(self, file, adds, removes):
+            if file is None:
+                return
+            if file in self.stats:
+                fstat = self.stats[file]
+            else:
+                self.files.append(file)
+                fstat = self.Filestat()
+
+            fstat.adds += adds
+            fstat.removes += removes
+            fstat.total += adds + removes
+            self.stats[file] = fstat
+
+            self.maxname = max(self.maxname, len(file))
+            self.maxtotal = max(self.maxtotal, fstat.total)
+            self.total_adds += adds
+            self.total_removes += removes
+
+        def __str__(self):
+            if self.total_adds == self.total_removes == 0:
+                return ' 0 files changed'
+
+            # Work out widths
+            width = 78 - 5
+            countwidth = len(str(self.maxtotal))
+            graphwidth = width - countwidth - self.maxname
+            factor = 1
+
+            # The graph width can be <= 0 if there is a modified file with a
+            # filename longer than 'width'. Use a minimum of 10.
+            if graphwidth < 10:
+                graphwidth = 10
+
+            while (self.maxtotal / factor) > graphwidth:
+                factor += 1
+
+            s = ""
+
+            for file in self.files:
+                fstat = self.stats[file]
+
+                s += ' %-*s | %*.d ' % (self.maxname, file, countwidth, fstat.total)
+
+                # If diffstat runs out of room it doesn't print anything, which
+                # isn't very useful, so always print at least one + or 1
+                if fstat.adds > 0:
+                    adds = '+' * max(int(fstat.adds / factor), 1)
+                    s += adds
+
+                if fstat.removes > 0:
+                    removes = '-' * max(int(fstat.removes / factor), 1)
+                    s += removes
+
+                s += '\n'
+
+            if self.stats:
+                noun = 'files' if len(self.stats) > 1 else 'file'
+
+                s += ' %d %s changed, %d %s(+), %d %s(-)' % (
+                        len(self.stats), noun,
+                        self.total_adds,
+                        'insertions' if self.total_adds != 1 else 'insertion',
+                        self.total_removes,
+                        'deletions' if self.total_removes != 1 else 'deletion')
+
+            return s

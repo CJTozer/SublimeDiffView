@@ -65,10 +65,12 @@ class FileDiff(object):
             view: The view to add regions to.
             styles: A map of styles for the diff region types.
         """
-        regions = {}
-        for sel in ["ADD", "MOD", "DEL"]:
-            regions[sel] = [r for h in self.hunks for r in h.get_old_regions(view) if h.hunk_type == sel]
-        self.add_regions(view, regions, styles)
+        if not hasattr(view, "old_regions"):
+            regions = {}
+            for sel in ["ADD", "MOD", "DEL"]:
+                regions[sel] = [r for h in self.hunks for r in h.get_old_regions(view) if h.hunk_type == sel]
+            self.add_regions(view, regions, styles)
+        view.old_regions = True
 
     def add_new_regions(self, view, styles):
         """Add all highlighted regions to the view for this (new) file.
@@ -77,7 +79,9 @@ class FileDiff(object):
             view: The view to add regions to.
             styles: A map of styles for the diff region types.
         """
-        regions = {}
-        for sel in ["ADD", "MOD", "DEL"]:
-            regions[sel] = [r for h in self.hunks for r in h.get_new_regions(view) if h.hunk_type == sel]
-        self.add_regions(view, regions, styles)
+        if not hasattr(view, "new_regions"):
+            regions = {}
+            for sel in ["ADD", "MOD", "DEL"]:
+                regions[sel] = [r for h in self.hunks for r in h.get_new_regions(view) if h.hunk_type == sel]
+            self.add_regions(view, regions, styles)
+        view.new_regions = True

@@ -1,5 +1,5 @@
 # DiffView for Sublime Text 3
-*Git and SVN Diff Viewer for Sublime Text 3*
+*Git, SVN and Bazaar Diff Viewer for Sublime Text 3*
 
 [![Travis](https://img.shields.io/travis/CJTozer/SublimeDiffView/develop.svg?style=flat-square)](https://travis-ci.org/CJTozer/SublimeDiffView)
 [![Release](https://img.shields.io/github/release/CJTozer/SublimeDiffView.svg?style=flat-square)](https://github.com/CJTozer/SublimeDiffView/releases)
@@ -12,7 +12,7 @@
 * Side-by-side view with differences highlighted
 * Quick navigation from one change to the next, or search for diffs in a specific file
 * Auto-detects the repository to use from the current active file
-* Flexible diffs for both Git and SVN (see below for the full set of options)
+* Flexible diffs for Git, SVN and Bazaar (see below for the full set of options)
 * The most common diff (uncommitted changes) is the quickest to use
 
 ## Screenshots
@@ -71,6 +71,27 @@
 * `--cl issue1234`
     * show uncommitted changes on changelist `issue1234`
 
+### Bazaar
+* *Default* (when there's no input): show the difference in the working tree versus the last commit
+* `-r1`
+    * Show changes between the working tree and revision 1
+* `-r1..3`
+    * Show changes between revision 1 and revision 3
+* `-r1..3 xxx`
+    * Show changes between revision 1 and revision 3 for branch xxx
+* `-c2`
+    * Show the changes introduced by revision 2 (equivalent to `-r1..2`)
+* `-r-2..`
+    * Show the changes between the current revision and the previous revision (equivalent to `-c-1` and `-r-2..-1`)
+* `FILE`
+    * Show just the differences for `FILE`
+* `xxx/FILE`
+    * Show the differences in working tree xxx for `FILE`
+* `--old xxx`
+    * Show the differences from branch xxx to this working tree
+* `--old xxx --new yyy FILE`
+    * Show the differences between two branches for `FILE`
+
 ## Configuration Options
 
 ### Diff View Style
@@ -89,6 +110,12 @@ There are 2 different view styles supported - "Quick Panel" and "Persistent List
 ### Highlighting Styles
 
 Each of the highlihgted regions' styles can be configured in the settings.  These settings are all documented in the 'Default' settings (`Preferences -> Package Settings -> DiffVew -> Settings - Default`).  Copy the settings to your User settings (`Preferences -> Package Settings -> DiffVew -> Settings - User`) to override the defaults.
+
+## Contributors
+
+Thanks to the following for their contributions:
+
+* [@3v1n0](https://github.com/3v1n0) for Bazaar support
 
 ## Feedback
 
