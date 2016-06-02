@@ -13,7 +13,7 @@ class VCSHelper(object):
     directory.
     """
     __metaclass__ = ABCMeta
-    SVN_BASE_MATCH = re.compile('Root Path:\s*([\:\\\\/\w\.\-]*)')
+    SVN_BASE_MATCH = re.compile('Root Path:\s*([\:\\\\/\w\.\- ]*)')
 
     @classmethod
     def get_helper(cls, cwd):
