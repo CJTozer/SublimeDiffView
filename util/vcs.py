@@ -56,7 +56,7 @@ class VCSHelper(object):
             if not err:
                 match = VCSHelper.SVN_BASE_MATCH.search(out.decode('utf-8'))
                 if match:
-                    return SVNHelper(match.group(1))
+                    return SVNHelper(match.group(1).rstrip())
                 else:
                     print("Couldn't find SVN repo in:\n{}".format(out.decode('utf-8')))
         except:
