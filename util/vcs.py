@@ -16,7 +16,7 @@ class VCSHelper(object):
     SVN_BASE_MATCH = re.compile('Root Path:\s*([\:\\\\/\w\.\- ]*)')
 
     @classmethod
-    def get_helper(cls, cwd):
+    def get_helper(cls, cwd, debug=False):
         """Get the correct VCS helper for this codebase.
 
         Checks for Git first, then Subversion.
@@ -40,7 +40,7 @@ class VCSHelper(object):
                 cwd=cwd)
             out, err = p.communicate()
             if not err:
-                return GitHelper(out.decode('utf-8').rstrip())
+                return GitHelper(out.decode('utf-8').rstrip(), debug=debug)
         except:
             pass
 
@@ -56,7 +56,7 @@ class VCSHelper(object):
             if not err:
                 match = VCSHelper.SVN_BASE_MATCH.search(out.decode('utf-8'))
                 if match:
-                    return SVNHelper(match.group(1).rstrip())
+                    return SVNHelper(match.group(1).rstrip(), debug=debug)
                 else:
                     print("Couldn't find SVN repo in:\n{}".format(out.decode('utf-8')))
         except:
@@ -72,7 +72,7 @@ class VCSHelper(object):
                 cwd=cwd)
             out, err = p.communicate()
             if not err:
-                return BzrHelper(out.decode('utf-8').rstrip())
+                return BzrHelper(out.decode('utf-8').rstrip(), debug=debug)
         except:
             pass
 
@@ -128,12 +128,18 @@ class VCSHelper(object):
             The command's output, as a string.
         """
         # Using shell, just pass a string to subprocess.
+        cmd = " ".join([self.vcs] + args)
         p = subprocess.Popen(
-            " ".join([self.vcs] + args),
+            cmd,
             stdout=subprocess.PIPE,
             shell=True,
             cwd=self.repo_base)
+        if self.debug:
+            print("**** Running VCS command:\n%s" % cmd)
         out, err = p.communicate()
+        if self.debug:
+            print("** VCS command returns output:\n%s" % out)
+            print("** VCS command returns error:\n%s" % err)
         return out.decode('utf-8')
 
 
@@ -149,7 +155,7 @@ class GitHelper(VCSHelper):
     DIFF_MATCH_MERGE_BASE = re.compile('(.*)\.\.\.(.*)')
     DIFF_MATCH = re.compile('(.*)\.\.(.*)')
 
-    def __init__(self, repo_base):
+    def __init__(self, repo_base, debug=False):
         """Constructor
 
         Args:
@@ -158,6 +164,7 @@ class GitHelper(VCSHelper):
         self.repo_base = repo_base
         self.got_changed_files = False
         self.vcs = 'git'
+        self.debug = debug
 
     def get_changed_files(self, diff_args):
         files = []
@@ -219,10 +226,11 @@ class SVNHelper(VCSHelper):
     REV_MATCH = re.compile('-r *(\d+)')
     COMMIT_MATCH = re.compile('-c *(\d+)')
 
-    def __init__(self, repo_base):
+    def __init__(self, repo_base, debug=False):
         self.repo_base = repo_base
         self.got_changed_files = False
         self.vcs = 'svn'
+        self.debug = debug
 
     def get_changed_files(self, diff_args):
         files = []
@@ -292,7 +300,7 @@ class BzrHelper(VCSHelper):
     STAT_CHANGED_FILE = re.compile('\s*([\w\.\-\/ ]+)\s*\|')
     DIFF_MATCH = re.compile('(.*)\.\.(.*)')
 
-    def __init__(self, repo_base):
+    def __init__(self, repo_base, debug=False):
         """Constructor
 
         Args:
@@ -301,6 +309,7 @@ class BzrHelper(VCSHelper):
         self.repo_base = repo_base
         self.got_changed_files = False
         self.vcs = 'bzr'
+        self.debug = debug
 
     def get_changed_files(self, diff_args):
         files = []

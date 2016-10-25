@@ -13,5 +13,8 @@
     "del_highlight_style": "invalid",
 
     // Style for the currently selected change in the 'persistent list'.
-    "list_sel_highlight_style": "comment"
+    "list_sel_highlight_style": "comment",
+
+    // Enable debug logging (to ST console)?
+    "debug": false,
 }

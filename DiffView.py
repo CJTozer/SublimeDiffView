@@ -23,6 +23,9 @@ class DiffView(sublime_plugin.WindowCommand):
         self.window.last_diff = self
         self.last_hunk_index = 0
         self.settings = sublime.load_settings('DiffView.sublime-settings')
+        self.debug = self.settings.get("debug", False)
+        if self.debug:
+            print("DiffView running in debug mode")
         self.view_style = self.settings.get("view_style", "quick_panel")
         self.styles = {
             "ADD": self.settings.get("add_highlight_style", "support.class"),
@@ -83,7 +86,7 @@ class DiffView(sublime_plugin.WindowCommand):
         try:
             # Create the diff parser
             cwd = os.path.dirname(self.window.active_view().file_name())
-            self.parser = DiffParser(self.diff_args, cwd)
+            self.parser = DiffParser(self.diff_args, cwd, debug=self.debug)
         except NoVCSError:
             # No changes; say so
             sublime.message_dialog("This file does not appear to be under version control (Git, SVN or Bazaar).")
