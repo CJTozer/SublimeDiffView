@@ -23,6 +23,9 @@ class DiffView(sublime_plugin.WindowCommand):
         self.window.last_diff = self
         self.last_hunk_index = 0
         self.settings = sublime.load_settings('DiffView.sublime-settings')
+        self.debug = self.settings.get("debug", False)
+        if self.debug:
+            print("DiffView running in debug mode")
         self.view_style = self.settings.get("view_style", "quick_panel")
         self.styles = {
             "ADD": self.settings.get("add_highlight_style", "support.class"),
@@ -83,7 +86,7 @@ class DiffView(sublime_plugin.WindowCommand):
         try:
             # Create the diff parser
             cwd = os.path.dirname(self.window.active_view().file_name())
-            self.parser = DiffParser(self.diff_args, cwd)
+            self.parser = DiffParser(self.diff_args, cwd, debug=self.debug)
         except NoVCSError:
             # No changes; say so
             sublime.message_dialog("This file does not appear to be under version control (Git, SVN or Bazaar).")
@@ -305,27 +308,29 @@ class DiffViewEventListner(sublime_plugin.EventListener):
     def on_selection_modified_async(self, view):
         """Called when a selection has been modified.
 
-        Only interested if this is the change list view.
+        Only interested if this is the change list view, and we're now on a different line.
 
         Args:
             view: The view that's changed selection.
         """
         if self._listening and view == self.view:
             current_selection = view.sel()[0]
-            (self.current_row, _) = view.rowcol(current_selection.a)
-            # rowcol is zero indexed, so line 1 gives index zero - perfect
-            self.diff.preview_hunk(self.current_row)
+            (new_row, _) = view.rowcol(current_selection.a)
+            if new_row != self.current_row:
+                self.current_row = new_row
+                # rowcol is zero indexed, so line 1 gives index zero - perfect
+                self.diff.preview_hunk(self.current_row)
 
-            # Highlight the selected line
-            view.erase_regions(Constants.SELECTED_CHANGE_KEY)
-            selected_line_region = sublime.Region(
-                self.view.text_point(self.current_row, 0),
-                self.view.text_point(self.current_row + 1, 0))
-            view.add_regions(
-                Constants.SELECTED_CHANGE_KEY,
-                [selected_line_region],
-                self.diff.styles["LIST_SEL"],
-                flags=Constants.SELECTED_CHANGE_FLAGS)
+                # Highlight the selected line
+                view.erase_regions(Constants.SELECTED_CHANGE_KEY)
+                selected_line_region = sublime.Region(
+                    self.view.text_point(self.current_row, 0),
+                    self.view.text_point(self.current_row + 1, 0))
+                view.add_regions(
+                    Constants.SELECTED_CHANGE_KEY,
+                    [selected_line_region],
+                    self.diff.styles["LIST_SEL"],
+                    flags=Constants.SELECTED_CHANGE_FLAGS)
 
     def on_query_context(self, view, key, operator, operand, match_all):
         """Context queries mean someone is trying to work out whether to override key bindings.

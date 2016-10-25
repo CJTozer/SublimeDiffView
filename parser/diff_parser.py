@@ -10,7 +10,7 @@ class DiffParser(object):
     This class represents the entire diff.
     """
 
-    def __init__(self, diff_args, cwd):
+    def __init__(self, diff_args, cwd, debug=False):
         """Constructor.
 
         Args:
@@ -20,7 +20,8 @@ class DiffParser(object):
         self.diff_args = diff_args
         self.cwd = cwd
         self.temp_dir = tempfile.mkdtemp()
-        self.vcs_helper = VCSHelper.get_helper(self.cwd)
+        self.debug = debug
+        self.vcs_helper = VCSHelper.get_helper(self.cwd, debug=self.debug)
         self.changed_files = self.vcs_helper.get_changed_files(self.diff_args)
         self.changed_hunks = []
         for f in self.changed_files:
