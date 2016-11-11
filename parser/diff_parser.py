@@ -1,4 +1,5 @@
 import os
+import codecs
 import tempfile
 
 from ..util.vcs import VCSHelper
@@ -44,7 +45,7 @@ class DiffParser(object):
 
                 if not os.path.exists(old_dir):
                     os.makedirs(old_dir)
-                with open(changed_file.old_file, 'w') as f:
+                with codecs.open(changed_file.old_file, 'w', 'utf-8') as f:
                     old_file_content = self.vcs_helper.get_file_content(changed_file.filename, old_ver)
                     f.write(old_file_content.replace('\r\n', '\n'))
 
@@ -61,6 +62,6 @@ class DiffParser(object):
 
                 if not os.path.exists(new_dir):
                     os.makedirs(new_dir)
-                with open(changed_file.new_file, 'w') as f:
+                with codecs.open(changed_file.new_file, 'w', 'utf-8') as f:
                     new_file_content = self.vcs_helper.get_file_content(changed_file.filename, new_ver)
                     f.write(new_file_content.replace('\r\n', '\n'))

@@ -139,7 +139,8 @@ class VCSHelper(object):
         out, err = p.communicate()
         if self.debug:
             print("** VCS command returns output:\n%s" % out)
-            print("** VCS command returns error:\n%s" % err)
+            if err:
+                print("** VCS command returns error:\n%s" % err)
         return out.decode('utf-8')
 
 
