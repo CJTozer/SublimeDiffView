@@ -1,6 +1,7 @@
 import sublime
 import sublime_plugin
 import os
+import codecs
 import threading
 import time
 import tempfile
@@ -122,7 +123,7 @@ class DiffView(sublime_plugin.WindowCommand):
         else:
             # Put the hunks list in the top panel
             self.changes_list_file = tempfile.mkstemp()[1]
-            with open(self.changes_list_file, 'w') as f:
+            with codecs.open(self.changes_list_file, 'w', 'utf-8') as f:
                 changes_list = "\n".join([h.oneline_description for h in self.parser.changed_hunks])
                 f.write(changes_list)
             self.changes_list_view = self.window.open_file(
