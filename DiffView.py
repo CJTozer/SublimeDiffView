@@ -365,6 +365,7 @@ class DiffViewEventListner(sublime_plugin.EventListener):
         self.view = view
         self.diff = diff
         self._listening = True
+        self.current_row = -1
 
     def stop(self):
         """Stop listening."""
