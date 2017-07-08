@@ -11,12 +11,13 @@ class DiffParser(object):
     This class represents the entire diff.
     """
 
-    def __init__(self, diff_args, cwd, debug=False):
+    def __init__(self, diff_args, cwd, debug=False, get_diff_headers=False):
         """Constructor.
 
         Args:
             diff_args: The arguments to be used for the Git diff.
             cwd: The working directory.
+            get_diff_headers: Whether we want per-file header hunks for this diff.
         """
         self.diff_args = diff_args
         self.cwd = cwd
@@ -26,7 +27,7 @@ class DiffParser(object):
         self.changed_files = self.vcs_helper.get_changed_files(self.diff_args)
         self.changed_hunks = []
         for f in self.changed_files:
-            self.changed_hunks += f.get_hunks()
+            self.changed_hunks += f.get_hunks(include_headers=get_diff_headers)
 
         self.setup_files()
 

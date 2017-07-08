@@ -111,12 +111,27 @@ There are 2 different view styles supported - "Quick Panel" and "Persistent List
 
 Each of the highlihgted regions' styles can be configured in the settings.  These settings are all documented in the 'Default' settings (`Preferences -> Package Settings -> DiffVew -> Settings - Default`).  Copy the settings to your User settings (`Preferences -> Package Settings -> DiffVew -> Settings - User`) to override the defaults.
 
+### Collapsing Changes List
+
+When working with the "Persistent List" view, to save space there's a configuration option to collapse the list of changes for each file.  Toggle the details for the file using `Tab` (by default).
+
+To configure:
+
+```
+{
+    // Whether to collapse each file's list of changes in the "persistent_list" view.
+    "collapse_diff_list": true,
+
+}
+```
+
 ## Contributors
 
 Thanks to the following for their contributions:
 
-* [@3v1n0](https://github.com/3v1n0) for Bazaar support
+* [@3v1n0](https://github.com/3v1n0) for adding Bazaar support
+* [@leeahoward](https://github.com/leeahoward) for raising and providing the fix for #48
 
 ## Feedback
 
-This plugin is still in active development.  If you have any issues, comments, or feature suggestions, please raise them [on GitHub](https://github.com/CJTozer/SublimeDiffView/issues).  All feedback gratefully received.
+If you have any issues, comments, or feature suggestions, please raise them [on GitHub](https://github.com/CJTozer/SublimeDiffView/issues).  All feedback gratefully received.
