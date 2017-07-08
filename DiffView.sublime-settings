@@ -4,6 +4,9 @@
     // - "persistent_list"
     "view_style": "persistent_list",
 
+    // Whether to collapse each file's list of changes in the "persistent_list" view.
+    "collapse_diff_list": false,
+
     // The styles to use for different highlights.
     // The defaults work reasonably well for most colour schemes.
     // For some, e.g. Molokai that define them, "markup.inserted",

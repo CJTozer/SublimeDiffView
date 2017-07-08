@@ -141,3 +141,23 @@ class HunkDiff(object):
             view.text_point(r.start_line - 1, r.start_col),
             view.text_point(r.end_line - 1, r.end_col))
             for r in self.new_regions]
+
+
+class DummyHunkDiff(HunkDiff):
+
+    """Dummy hunk for file 'header' only.
+
+    Args:
+        file_diff: The parent `FileDiff` object.
+        n_changes: The number of changes in this file.
+    """
+
+    def __init__(self, file_diff, n_changes):
+        self.file_diff = file_diff
+        self.old_regions = []
+        self.new_regions = []
+        self.old_line_focus = 0
+        self.new_line_focus = 0
+        self.n_changes = n_changes
+        self.oneline_description = "{:40} {} changes".format(file_diff.filename, n_changes)
+        self.description = ["========", "", ""]

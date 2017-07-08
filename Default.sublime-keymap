@@ -21,4 +21,11 @@
             { "key": "diff_changes_list" }
         ]
     },
+    {
+        "command": "diff_list_toggle_fold",
+        "keys": ["tab"],
+        "context": [
+            { "key": "diff_changes_list" }
+        ]
+    },
 ]

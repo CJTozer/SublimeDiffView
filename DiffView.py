@@ -28,6 +28,8 @@ class DiffView(sublime_plugin.WindowCommand):
         if self.debug:
             print("DiffView running in debug mode")
         self.view_style = self.settings.get("view_style", "quick_panel")
+        self.collapse_diff_list = (
+            self.settings.get("collapse_diff_list", False) and self.view_style == "persistent_list")
         self.styles = {
             "ADD": self.settings.get("add_highlight_style", "support.class"),
             "MOD": self.settings.get("mod_highlight_style", "string"),
@@ -43,7 +45,6 @@ class DiffView(sublime_plugin.WindowCommand):
                 "cells": [
                     [0, 0, 1, 1],
                     [1, 0, 2, 1]]}
-            self.diff_list_group = None
             self.lhs_group = 0
             self.rhs_group = 1
         elif self.view_style == "persistent_list":
@@ -54,7 +55,6 @@ class DiffView(sublime_plugin.WindowCommand):
                     [0, 0, 2, 1],
                     [0, 1, 1, 2],
                     [1, 1, 2, 2]]}
-            self.diff_list_group = 0
             self.lhs_group = 1
             self.rhs_group = 2
         else:
@@ -87,7 +87,11 @@ class DiffView(sublime_plugin.WindowCommand):
         try:
             # Create the diff parser
             cwd = os.path.dirname(self.window.active_view().file_name())
-            self.parser = DiffParser(self.diff_args, cwd, debug=self.debug)
+            self.parser = DiffParser(
+                self.diff_args,
+                cwd,
+                debug=self.debug,
+                get_diff_headers=self.collapse_diff_list)
         except NoVCSError:
             # No changes; say so
             sublime.message_dialog("This file does not appear to be under version control (Git, SVN or Bazaar).")
@@ -124,8 +128,15 @@ class DiffView(sublime_plugin.WindowCommand):
             # Put the hunks list in the top panel
             self.changes_list_file = tempfile.mkstemp()[1]
             with codecs.open(self.changes_list_file, 'w', 'utf-8') as f:
-                changes_list = "\n".join([h.oneline_description for h in self.parser.changed_hunks])
-                f.write(changes_list)
+                def get_prefix(hunk):
+                    # Prefix with indent if not a header and using headers
+                    if self.collapse_diff_list and not hasattr(hunk, 'n_changes'):
+                        return "  "
+                    return ""
+
+                changes_list = " \n".join(
+                    [get_prefix(h) + h.oneline_description for h in self.parser.changed_hunks])
+                f.write(changes_list + " ")
             self.changes_list_view = self.window.open_file(
                 self.changes_list_file,
                 flags=sublime.TRANSIENT |
@@ -146,6 +157,34 @@ class DiffView(sublime_plugin.WindowCommand):
                     "show_diff_list",
                     args={'last_selected': self.last_hunk_index,
                           'style': self.styles['LIST_SEL']})
+
+                # Add folding regions if configured
+                if self.collapse_diff_list:
+                    # Arrange the changes into per-file collapsing regions
+                    n_hunks = len(self.parser.changed_hunks)
+                    line = 0
+                    regions = []
+                    while line < n_hunks:
+                        header = self.parser.changed_hunks[line]
+                        file_hunks = header.n_changes
+                        fold_region = sublime.Region(
+                            self.changes_list_view.text_point(line + 1, 0) - 1,
+                            self.changes_list_view.text_point(line + file_hunks + 1, 0) - 1)
+                        regions.append(fold_region)
+
+                        # For simplicity, give each hunk in the file a reference to the region.
+                        next_header = line + file_hunks + 1
+                        while line < next_header:
+                            self.parser.changed_hunks[line].fold_region = fold_region
+                            line += 1
+
+                    # Add the regions to the view and fold them by default
+                    self.changes_list_view.add_regions(
+                        Constants.ADD_REGION_KEY,
+                        regions,
+                        "string",
+                        flags=sublime.HIDDEN)
+                    self.changes_list_view.fold(regions)
 
             # Listen for changes to this view's selection.
             DiffViewEventListner.instance().start_listen(
@@ -216,6 +255,16 @@ class DiffView(sublime_plugin.WindowCommand):
             # Keep the focus in the quick panel
             self.window.focus_view(self.qpanel)
 
+    def list_toggle_fold(self, hunk_index):
+        hunk = self.parser.changed_hunks[hunk_index]
+        fold_region = hunk.fold_region
+
+        # fold() returns False if already folded
+        if not self.changes_list_view.fold(fold_region):
+            # Unfold
+            self.changes_list_view.unfold(fold_region)
+
+
     def reset_window(self):
         """Reset the window to its original state."""
         if self.view_style == "persistent_list":
@@ -262,6 +311,14 @@ class DiffShowSelected(sublime_plugin.WindowCommand):
         """Show the change that's curently selected by this view."""
         if hasattr(self.window, 'last_diff'):
             self.window.last_diff.show_hunk_diff(DiffViewEventListner.instance().current_row)
+
+
+class DiffListToggleFoldCommand(sublime_plugin.WindowCommand):
+    def run(self):
+        """Toggle the folding of the current file's hunk list."""
+        if hasattr(self.window, 'last_diff') and self.window.last_diff.collapse_diff_list:
+            self.window.last_diff.list_toggle_fold(
+                DiffViewEventListner.instance().current_row)
 
 
 class DiffViewUncommitted(DiffView):

@@ -1,6 +1,6 @@
 import re
 
-from .hunk_diff import HunkDiff
+from .hunk_diff import HunkDiff, DummyHunkDiff
 from ..util.constants import Constants
 
 
@@ -24,27 +24,33 @@ class FileDiff(object):
         self.diff_text = diff_text
         self.hunks = []
 
-    def get_hunks(self):
+    def get_hunks(self, include_headers=False):
         """Get the changed hunks for this file.
 
         Wrapper to force parsing only once, and only when the hunks are required.
         """
         if not self.hunks:
-            self.parse_diff()
+            self.parse_diff(include_headers=include_headers)
         return self.hunks
 
-    def parse_diff(self):
+    def parse_diff(self, include_headers=False):
         """Run the Git diff command, and parse the diff for this file into hunks.
 
-        Do not call directly - use `get_hunks` instead."""
+        Do not call directly - use `get_hunks` instead.
+        """
         hunks = self.HUNK_MATCH.split(self.diff_text)
 
-        # First item is the header - drop it
+        # First item is the diff header - drop it
         hunks.pop(0)
         match_len = 5
         while len(hunks) >= match_len:
             self.hunks.append(HunkDiff(self, hunks[:match_len]))
             hunks = hunks[match_len:]
+
+        # This file has changes, add a dummy 'hunk' for the header, which is just
+        # the start of the file.
+        if include_headers:
+            self.hunks.insert(0, DummyHunkDiff(self, len(self.hunks)))
 
     def add_regions(self, view, regions, styles):
         """Add all highlighted regions to the view for this file.
