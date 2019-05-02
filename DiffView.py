@@ -64,7 +64,11 @@ class DiffView(sublime_plugin.WindowCommand):
     def run(self, diff_args=None, cwd=None):
         """Runs the diff.
 
-        Starts by asking for diff arguments in an input panel.
+        Starts by conditionanlly asking for diff arguments in an input panel (see arguments).
+
+        Args:
+            diff_args: [optional] the arguments to the diff. If not present, an input panel will ask for them instead
+            cwd: [optional] the [c]urrent [w]orking [d]irectory to open the diff in. If not present, this will default to the cwd of the currently open file
         """
         self._prepare()
 
@@ -85,6 +89,7 @@ class DiffView(sublime_plugin.WindowCommand):
 
         Args:
             diff_args: the arguments to the diff.
+            cwd: [optional] the [c]urrent [w]orking [d]irectory to open the diff in. If not present, this will default to the cwd of the currently open file
         """
         self.diff_args = diff_args
 
