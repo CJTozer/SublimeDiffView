@@ -125,12 +125,25 @@ To configure:
 }
 ```
 
+## Invoking From Another Plugin
+
+```
+window.run_command(
+    "diff_view",
+    {
+        "diff_args": "origin/your-base...origin/your-branch",
+        "cwd": "/your/cwd",
+    },
+)
+```
+
 ## Contributors
 
 Thanks to the following for their contributions:
 
 * [@3v1n0](https://github.com/3v1n0) for adding Bazaar support
 * [@leeahoward](https://github.com/leeahoward) for raising and providing the fix for #48
+* [@rkoval](https://github.com/rkoval) for adding an entrypoint for other plugins to use programmatically #65
 
 ## Feedback
 
