@@ -61,32 +61,42 @@ class DiffView(sublime_plugin.WindowCommand):
             sublime.error_message("Invalid value '{}'' for 'view_style'".format(self.view_style))
             raise ValueError("Invalid 'view_style': '{}'".format(self.view_style))
 
-    def run(self):
+    def run(self, diff_args=None, cwd=None):
         """Runs the diff.
 
-        Starts by asking for diff arguments in an input panel.
+        Starts by conditionanlly asking for diff arguments in an input panel (see arguments).
+
+        Args:
+            diff_args: [optional] the arguments to the diff. If not present, an input panel will ask for them instead
+            cwd: [optional] the [c]urrent [w]orking [d]irectory to open the diff in. If not present, this will default to the cwd of the currently open file
         """
         self._prepare()
 
         # Use show_input_panel as show_quick_panel doesn't allow arbitrary data
-        self.window.show_input_panel(
-            "Diff arguments?",
-            self.diff_args,
-            self.do_diff,
-            None,
-            None)
+        if diff_args:
+            # if args passed directly (e.g., from another plugin), don't ask for input panel
+            self.do_diff(diff_args, cwd)
+        else:
+            self.window.show_input_panel(
+                "Diff arguments?",
+                self.diff_args,
+                self.do_diff,
+                None,
+                None)
 
-    def do_diff(self, diff_args):
+    def do_diff(self, diff_args, cwd=None):
         """Run a diff and display the changes.
 
         Args:
             diff_args: the arguments to the diff.
+            cwd: [optional] the [c]urrent [w]orking [d]irectory to open the diff in. If not present, this will default to the cwd of the currently open file
         """
         self.diff_args = diff_args
 
         try:
             # Create the diff parser
-            cwd = os.path.dirname(self.window.active_view().file_name())
+            if not cwd:
+                cwd = os.path.dirname(self.window.active_view().file_name())
             self.parser = DiffParser(
                 self.diff_args,
                 cwd,
