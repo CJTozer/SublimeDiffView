@@ -8,7 +8,7 @@ env:
 
 env:
     global:
-        - PACKAGE="UnitTesting-example" # Package name
+        - PACKAGE="DiffView"
         - SUBLIME_TEXT_VERSION="3"
 
 matrix:
