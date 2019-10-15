@@ -141,7 +141,7 @@ class VCSHelper(object):
             print("** VCS command returns output:\n%s" % out)
             if err:
                 print("** VCS command returns error:\n%s" % err)
-        return out.decode('utf-8')
+        return out.decode('utf-8', 'replace')
 
 
 class NoVCSError(Exception):
